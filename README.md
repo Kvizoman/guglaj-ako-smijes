@@ -94,6 +94,8 @@ npm run stanje-pitanja
 
 Pokazuje koliko pitanja po kategoriji još nije bilo u kvizu dana i za koliko dana ih ima. Kviz dana uzima 2 pitanja iz svake kategorije dnevno, pa 40 pitanja traje 20 dana. Kad se iscrpe, pitanja se ponavljaju ravnomjerno (najprije ona koja su bila najrjeđe), a nova pitanja dobivaju prednost čim se uvezu. Kad skripta javi manje od tjedan dana, vrijeme je za nova pitanja.
 
+**Podsjetnik e-mailom:** GitHub svako jutro sam pokrene tu provjeru (`.github/workflows/podsjetnik.yml`). Kad u nekoj kategoriji ostane manje od 7 dana pitanja, otvori obavijest (issue) „Vrijeme je za nova pitanja” u repozitoriju i GitHub je pošalje e-mailom. Nova obavijest dolazi tek kad se stara zatvori. Provjera koristi tajnu `UVOZ_TOKEN` u postavkama repozitorija (Settings, Secrets and variables, Actions). Ako se token promijeni, treba promijeniti i tu tajnu.
+
 ### Uvoz pitanja u bazu
 
 ```
