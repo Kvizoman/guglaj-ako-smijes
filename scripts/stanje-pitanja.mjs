@@ -1,14 +1,15 @@
 // Pokazuje koliko pitanja po kategoriji još nije bilo u kvizu dana.
 // Pokretanje: npm run stanje-pitanja
 // Treba isti tajni token kao uvoz (.env.local, UVOZ_TOKEN=...).
-import { readFileSync, existsSync } from 'node:fs';
+// Na GitHubu (podsjetnik, .github/workflows/podsjetnik.yml) token dolazi iz tajne UVOZ_TOKEN.
+import { readFileSync, existsSync, appendFileSync } from 'node:fs';
 
 const KONFIG = readFileSync('src/api/konfig.ts', 'utf8');
 const URL_BAZE = KONFIG.match(/SUPABASE_URL = '([^']+)'/)[1];
 const KLJUC = KONFIG.match(/SUPABASE_KLJUC = '([^']+)'/)[1];
-const TOKEN = existsSync('.env.local')
+const TOKEN = process.env.UVOZ_TOKEN || (existsSync('.env.local')
   ? (readFileSync('.env.local', 'utf8').match(/^UVOZ_TOKEN=(.+)$/m) ?? [])[1]?.trim()
-  : undefined;
+  : undefined);
 if (!TOKEN) {
   console.error('Nema tokena: treba datoteka .env.local s retkom UVOZ_TOKEN=...');
   process.exit(1);
@@ -45,3 +46,11 @@ console.log(najmanje <= 0
   ? '\nU barem jednoj kategoriji sva pitanja su već bila u kvizu dana: ponavljanja su počela. Vrijeme je za nova pitanja.'
   : `\nPrva ponavljanja za ${najmanje} ${najmanje % 10 === 1 && najmanje % 100 !== 11 ? 'dan' : 'dana'} (kategorija s najmanje neodigranih pitanja).`
     + (najmanje <= 7 ? ' Vrijeme je za nova pitanja.' : ''));
+
+// Za GitHub Actions: najmanji broj dana i kratki sažetak po kategorijama.
+if (process.env.GITHUB_OUTPUT) {
+  const sazetak = s.kategorije.map((k) => `${NAZIVI[k.kategorija] ?? k.kategorija}: ${k.nije} pitanja (${Math.floor(k.nije / PO_DANU)} dana)`).join('; ');
+  appendFileSync(process.env.GITHUB_OUTPUT, `najmanje=${najmanje}
+sazetak=${sazetak}
+`);
+}

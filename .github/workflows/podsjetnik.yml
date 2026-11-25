@@ -1,0 +1,44 @@
+# Podsjetnik za nova pitanja: svako jutro provjeri bazu i, kad u nekoj kategoriji
+# ostane premalo neodigranih pitanja, otvori obavijest (issue). GitHub je šalje e-mailom vlasnici repozitorija.
+# Obavijest se otvara samo jednom; nova se otvara tek kad se stara zatvori.
+name: Podsjetnik za pitanja
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # svaki dan u 6:00 UTC (7:00 ili 8:00 po našem vremenu)
+  workflow_dispatch:
+    inputs:
+      prag:
+        description: 'Upozori kad ostane manje od ovoliko dana'
+        default: '7'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  provjera:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: stanje
+        run: node scripts/stanje-pitanja.mjs
+        env:
+          UVOZ_TOKEN: ${{ secrets.UVOZ_TOKEN }}
+      - name: Obavijest ako je vrijeme za nova pitanja
+        if: ${{ fromJSON(steps.stanje.outputs.najmanje) < fromJSON(inputs.prag || '7') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAJMANJE: ${{ steps.stanje.outputs.najmanje }}
+          SAZETAK: ${{ steps.stanje.outputs.sazetak }}
+        run: |
+          NASLOV="Vrijeme je za nova pitanja"
+          if gh issue list --state open --search "$NASLOV in:title" --json number --jq '.[0].number' | grep -q .; then
+            echo "Obavijest je već otvorena, nova se ne šalje."
+            exit 0
+          fi
+          TIJELO=$(printf '@Kvizoman, u barem jednoj kategoriji neodigranih pitanja ima još za **%s dana** kviza dana. Nakon toga pitanja se počinju ponavljati.\n\nStanje po kategorijama: %s\n\nŠto napraviti: u Claude Codeu, u mapi projekta, zatraži nova pitanja (npr. „Dodaj 20 novih pitanja u svaku kategoriju”), pa ih uvezi s `npm run uvoz-pitanja`. Zatim zatvori ovu obavijest.' "$NAJMANJE" "$SAZETAK")
+          gh issue create --title "$NASLOV" --body "$TIJELO"
