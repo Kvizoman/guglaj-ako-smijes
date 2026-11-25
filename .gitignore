@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.*
+
+# Pitanja i pregledi sadrže točne odgovore: NE stavljati u javni repozitorij.
+# Čuvaju se na ovom računalu i u bazi (npm run uvoz-pitanja).
+pitanja/
+pregled/
