@@ -741,7 +741,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
   const zadnje = redni + 1 >= ukupnoPitanja;
   const dalje = h('button', {
     class: 'gumb gumb-glavni', type: 'button',
-    onclick: jednimKlikom(() => (zadnje ? kraj(r.ukupnoBodova, vrsta) : pitanje(redni + 1))),
+    onclick: jednimKlikom(() => (zadnje ? kraj(r.ukupnoBodova, vrsta, false, r.zavrsno, r.bonus) : pitanje(redni + 1))),
   }, zadnje ? 'Pogledaj rezultat' : 'Sljedeće pitanje');
 
   dno.replaceChildren(
@@ -761,7 +761,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
   dalje.focus({ preventScroll: true });
 }
 
-function kraj(bodovi: number, v: typeof vrsta, odranije = false) {
+function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: string, bonus?: string) {
   ugasiScenu();
   document.body.style.removeProperty('--kat');
   if (!odranije) zvuk.kraj();
@@ -774,6 +774,8 @@ function kraj(bodovi: number, v: typeof vrsta, odranije = false) {
       h('p', { class: 'kraj-oznaka' }, v === 'dnevni' && odranije ? 'Kviz dana' : 'Konačni rezultat'),
       h('div', { class: 'kraj-bodovi' }, String(bodovi)),
       h('p', { class: 'kraj-tekst' }, opis),
+      zavrsno ? h('p', { class: 'kraj-poruka' }, zavrsno) : null,
+      bonus ? h('p', { class: 'kraj-bonus' }, bonus) : null,
       v === 'dnevni'
         ? h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'button', onclick: jednimKlikom(() => ekranRangListe('dan')) }, 'Rang-lista dana')
         : null,

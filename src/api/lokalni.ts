@@ -287,7 +287,7 @@ export class LokalniApi implements Api {
       udioVremena: Math.max(preostaloMs, 0) / s.vrijemeMs,
     });
     const vlastiti = napustio ? undefined : tocno ? p.komentarTocno : (ishod === 'netocno' ? p.komentarNetocno : undefined);
-    const komentar = vlastiti ?? odaberiKomentar(ishod);
+    const komentar = vlastiti ?? odaberiKomentar(ishod, Math.random, k.niz);
 
     return {
       tocno, udio, bodovi, ukupnoBodova: k.ukupnoBodova, niz: k.niz,

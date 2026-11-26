@@ -324,6 +324,8 @@ button, input { font: inherit; color: inherit; }
   color: var(--zarulja); text-shadow: 0 0 50px color-mix(in srgb, var(--zarulja) 50%, transparent), 0 8px 0 #6B4800;
 }
 .kraj-tekst { margin: 0 0 1rem; font-size: 1.2rem; }
+.kraj-poruka { margin: -.4rem 0 1rem; font-size: 1.35rem; font-weight: 800; color: var(--zarulja); max-width: 28rem; text-wrap: balance; }
+.kraj-bonus { margin: 0 0 1.2rem; padding: .7rem .9rem; max-width: 28rem; border: 2px dashed var(--zarulja); border-radius: var(--r); font-style: italic; }
 
 /* ---------- Smanjeno kretanje ---------- */
 

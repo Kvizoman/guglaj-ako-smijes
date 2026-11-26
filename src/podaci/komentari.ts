@@ -1,11 +1,21 @@
-// Komentari nakon odgovora. Bira ih server prema ishodu.
-// Pisani su bez gramatičkog roda (igrači su i žene i muškarci).
-// Tablica `komentari` u bazi puni se odavde; nove komentare dodaješ ovdje.
-// Unutar jednog kviza server isti komentar ne ponavlja (migracija 0012).
+// Poruke nakon odgovora i na kraju kviza. Bira ih server (igra.komentari, migracija 0013).
+// Izvor: "Kviz s karakterom" (PDF korisnice, Google Disk, 26.11.2026.), uz poruke za varanje i jednu korisničinu poruku.
+// Pisane su bez gramatičkog roda (igrači su i žene i muškarci).
+// Tablica `komentari` u bazi puni se odavde; nove poruke dodaješ ovdje.
+// Unutar jednog kviza server istu poruku ne ponavlja.
+//
+// Kako server bira (prva skupina koja odgovara i u kojoj ima neiskorištene poruke):
+//   točno:    niz (točno taj broj) > povratak (nakon 3+ pogrešnih) > tesko (težina 3) > brzo > tocno
+//   netočno:  varanje > prekid (prekinut niz od 5+) > nizNetocnih (točno taj broj) > isteklo > lako (težina 1) > netocno
+//   djelomično točno: samo prekid ili nizNetocnih, inače bez poruke
+//   kraj kviza: poruka za postotak točnih; bonus uz 100 %
 
-export type Ishod = 'varanje' | 'brzo' | 'tocno' | 'niz' | 'djelomicno' | 'netocno' | 'isteklo';
+export type Ishod =
+  | 'varanje' | 'brzo' | 'tocno' | 'tesko' | 'povratak'
+  | 'netocno' | 'lako' | 'prekid' | 'isteklo' | 'djelomicno' | 'niz';
 
-export const KOMENTARI: Record<Ishod, string[]> = {
+/** Skupine bez praga. */
+export const KOMENTARI: Record<Exclude<Ishod, 'niz'>, string[]> = {
   // igrač je za vrijeme pitanja otišao u drugu karticu, aplikaciju ili prozor
   varanje: [
     'Varaš, a?',
@@ -21,151 +31,168 @@ export const KOMENTARI: Record<Ishod, string[]> = {
     'Tko traži, nađe. I izgubi pola bodova.',
     'Ovo je kviz, a ne seminarski rad s popisom literature.',
   ],
-  brzo: [
-    'Brže od Googlea. Sumnjivo brzo, ali priznajemo.',
-    'Odgovor je stigao prije nego što je pitanje sjelo.',
-    'Voditelj još nije ni dočitao pitanje.',
-    'Prsti brži od misli, a misli su ipak stigle na vrijeme.',
-    'Refleksi vratara u raspucavanju penala.',
-    'Prst na gumbu, mozak na turbo.',
-    'Brže od reklame koja se može preskočiti.',
-    'Sat se nije stigao ni uplašiti.',
-    'Fizičari provjeravaju je li ovo bilo putovanje kroz vrijeme.',
-    'Brže od tramvaja kad kasniš.',
-    'Ni munja ne bi stigla prije.',
-    'To nije bilo razmišljanje, to je bio refleks.',
-    'Odbrojavač je tek ustao iz kreveta, a već je gotovo.',
-    'Ekspres lonac znanja upravo je zazviždao.',
-    'Ovako se odgovara kad petkom zvoni zadnji sat.',
-    'Pitanje je još vezalo cipele, a odgovor je već bio na cilju.',
-    'Na ovo bi se okrenuli i u boksu Formule 1.',
-    'Kratko, brzo i točno. Kao dobar espresso.',
-  ],
-  tocno: [
-    'Točno. Publika u studiju tiho kima.',
-    'Tako se to radi.',
-    'Čisto, bez drame.',
-    'Učiteljica iz osnovne škole upravo je osjetila toplinu oko srca.',
-    'Ovo bi i zbornica potpisala.',
-    'Točno. Negdje jedna enciklopedija ponosno lista stranice.',
-    'Bingo. I to bez kuglica.',
-    'Točno! Ovaj odgovor ide na frižider.',
-    'Znanje se isplati. Barem u bodovima.',
-    'Negdje jedna profesorica briše suzu ponosa.',
-    'Odgovor za peticu, s plusom.',
-    'Ovo se zove opća kultura, a ne opća sreća.',
-    'Točno. Mudrost iz kafića konačno je dobila priznanje.',
-    'Pogodak u sridu, kako bi rekli u Dalmaciji.',
-    'Svaka čast. Bez telefona, bez Googlea, bez treme.',
-    'Kvizaši iz susjednog sela nervozno se pogledavaju.',
-    'Netko je čitao lektire. Ili barem sažetke.',
-    'Glava radi, bodovi rastu.',
-    'Točno. Ovo zaslužuje trube i konfete.',
-    'Ovaj odgovor prošao bi i kod najstrože komisije.',
-    'Točno! Baka bi rekla: "Pametna glavica."',
-    'Ovako izgleda kad mozak ima dobar dan.',
-    'Točno. Wikipedija upravo dobiva konkurenciju.',
-    'Zabilježeno, potpisano, ovjereno.',
-    'Točno, i to bez pomoći publike.',
-    'Točno. Jedan neuron upravo je dobio povišicu.',
-  ],
-  niz: [
-    'Niz se nastavlja. Ovo više nije sreća, ovo je metoda.',
-    'Kalkulator bodova se počinje zagrijavati.',
-    'Netko je večeras došao igrati ozbiljno.',
-    'Točno mislim da ipak guglaš na drugom uređaju.',
-    'Netko je ovamo došao po zlato.',
-    'Prestajemo brojati točne odgovore. Ti samo nastavi.',
-    'Ovo više nije kviz, ovo je solo nastup.',
-    'Niz raste, a protivnici na rang-listi blijede.',
-    'Vruće ruke! Neka netko donese vatrogasni aparat.',
-    'Domino efekt točnih odgovora.',
-    'Sustav javlja: previše znanja na jednom mjestu.',
-    'Neka netko javi Guinnessu. Ili barem susjedima.',
-    'Pitanja počinju šaptati među sobom: "S ovim je opasno."',
-    'Lanac točnih odgovora jači je od lanca na biciklu.',
-    'U kafiću bi za ovakav niz netko već platio rundu.',
-    'Toliko točnih zaredom da i odbrojavač navija.',
-    'Serija bolja od svih na televiziji.',
-    'Sumnjamo na tajni dogovor s enciklopedijom.',
-    'Ovdje se ne igra kviz, ovdje se drži predavanje.',
-  ],
-  djelomicno: [
-    'Pola kruha je bolje nego nimalo.',
-    'Blizu. Toliko blizu da se čuje.',
-    'Djelomično točno, potpuno hrabro.',
-    'Pola posla obavljeno. Druga polovica je na godišnjem.',
-    'Djelomično točno. Kao vremenska prognoza.',
-    'Skoro pa savršeno. Naglasak na skoro.',
-    'Dio bodova ide kući, dio ostaje na stolu.',
-    'Lopta je pogodila prečku i napola ušla.',
-    'Nije sve, ali nije ni malo.',
-    'Na pravom tragu, samo je vlak stao stanicu ranije.',
-    'Bodovi na popustu. Bolje nego bez bodova.',
-    'Kao kolač kojem je trebalo još pet minuta u pećnici.',
-    'Zlatna sredina. Ne zlato, ali sredina.',
-    'Pola točno. Druga polovica je zapela u prometu.',
-    'Ovo se broji. Ne sve, ali broji se.',
-  ],
+  // pogrešan odgovor
   netocno: [
-    'Hrabar odgovor. Netočan, ali hrabar.',
-    'Ovu rundu odnosi pitanje.',
-    'Ništa strašno, i enciklopedije imaju loše dane.',
-    'Barem je bilo samouvjereno.',
-    'Sljedeće je sigurno lakše. Vjerojatno.',
-    'Netočno. Ali s puno stila.',
-    'Promašaj. Lopta je završila na tribinama.',
-    'Netočno. Nazovimo to kreativnom interpretacijom.',
-    'Skoro... ne, zapravo ni blizu. Ali simpatično.',
-    'Mozak je na trenutak otišao na kavu.',
-    'Netočno. Enciklopedija je upravo uzdahnula.',
-    'Dobra vijest: sljedeće pitanje ovo ne pamti.',
-    'Ovo je bio odgovor iz paralelnog svemira.',
-    'Netočno, ali ostaje među nama. I rang-listom.',
-    'Promašaj za kilometar. Ali smjer je bio dobar. Možda.',
-    'Učiteljica iz osnovne ovo bi zaokružila crvenom.',
-    'Ovo pitanje se smije. Tiho, ali se smije.',
-    'Joj. Idemo dalje kao da se ništa nije dogodilo.',
-    'Netočno. Barem je tipkanje bilo besprijekorno.',
-    'Krivi odgovor, prava hrabrost.',
-    'Ups. Ovo ide u arhivu neuspjelih pokušaja.',
-    'Hmm, ne. Ali bila je to lijepa ideja.',
-    'I najbolji kvizaši ponekad pogode stativu.',
-    'Netočno. Kava, duboki udah, sljedeće pitanje.',
-    'Ovaj odgovor zvuči uvjerljivo. Samo nije točan.',
-    'Pitanje 1, igrač 0. Utakmica se nastavlja.',
+    'Kreativno, ali činjenično neodrživo.',
+    'Samopouzdanje 100 %, preciznost nešto manje.',
+    'Zanimljiva teorija. Znanost se ne slaže.',
+    'Odgovor ima karakter. Nažalost, nema točnost.',
+    'U nekom paralelnom svemiru možda i jest.',
+    'Lijepo zamišljeno, pogrešno izvedeno.',
+    'Ni povjerenstvo za žalbe ovdje ne može pomoći.',
+    'Cijenimo umjetničku slobodu, ali tražimo činjenice.',
+    'Taj odgovor još čeka znanstvenu potvrdu.',
+    'Mašta je divna stvar. Osim na ovom pitanju.',
+    'Činjenice su upravo uložile prigovor.',
+    'Pokušaj vrijedan pažnje, ali ne i boda.',
+    'Logika je krenula na put, ali promašila izlaz.',
+    'Svemir je velik, ali ni u njemu nema opravdanja za ovaj odgovor.',
+    'Nije točno, ali barem nije dosadno!',
   ],
+  // točan odgovor na obično pitanje
+  tocno: [
+    'Mozak uredno servisiran!',
+    'Neuroni surađuju. Divota!',
+    'Znanje evidentirano, ego može malo narasti.',
+    'Sumnjivo dobro!',
+    'Mentalna kondicija na zavidnoj razini.',
+    'Bod u džepu, osmijeh na licu!',
+    'Činjenice i ti očito ste u dobrim odnosima.',
+    'Intelektualni promet odvija se bez zastoja.',
+    'Točno! Danas se očito ne radi na rezervi.',
+    'Mozak opravdava troškove održavanja.',
+  ],
+  // točan odgovor na teško pitanje (težina 3)
+  tesko: [
+    'Točno mislim da ipak guglaš na drugom uređaju.',
+    'Je li tebe Wikipedia zvala na konzultacije?',
+    'Molimo ostale igrače da ne paničare.',
+    'Ovo pitanje je trebalo biti teško. Hvala na kvarenju koncepta.',
+    'Einstein se upravo diskretno nakašljao.',
+    'Tvoj mozak očito ima dodatnu opremu.',
+    'Intelektualna demonstracija sile!',
+    'Ovakve odgovore trebalo bi oporezivati kao luksuz.',
+    'Pitanje je upravo izgubilo samopouzdanje.',
+    'Komisija za težinu pitanja podnosi ostavku.',
+    'Ovo više nije znanje. Ovo je intelektualni bezobrazluk.',
+    'Je li taj mozak tvornički ili naknadno ugrađen?',
+    'Enciklopedije su upravo osjetile konkurenciju.',
+    'Netko je očito čitao i sitna slova.',
+    'Skidamo kapu. Iako je nemamo.',
+    'Očekivali smo otpor, ne kapitulaciju pitanja.',
+  ],
+  // prvi pogrešan odgovor nakon niza od 5 ili više točnih
+  prekid: [
+    'I svemir je konačno uspostavio ravnotežu.',
+    'Aha! Ipak si ljudsko biće!',
+    'Dobro je. Već smo sumnjali na umjetnu inteligenciju.',
+    'Imperij je doživio manji administrativni problem.',
+    'Jedna rupa na autocesti genijalnosti.',
+    'Ne brini, ni Ferrari ne prolazi svaku krivinu savršeno.',
+    'Konkurencija je upravo kolektivno odahnula.',
+    'Kruna je malo nakrivljena, ali još je na glavi.',
+  ],
+  // pogrešan odgovor na vrlo lako pitanje (težina 1)
+  lako: [
+    'Ovo pitanje nije imalo ambicije biti teško.',
+    'Čak je i pitanje iznenađeno.',
+    'Dogodila se manja prometna nesreća između pitanja i odgovora.',
+    'Pretpostavljamo da je prst djelovao samostalno.',
+    'Mozak i prst očito nisu održali pripremni sastanak.',
+    'Ovo ćemo pripisati tehničkim poteškoćama.',
+    'Pitanje je došlo u miru. Nije očekivalo ovakav rasplet.',
+    'Čak i najbolji ponekad promaše prazan gol.',
+  ],
+  // munjevito brz točan odgovor
+  brzo: [
+    'Pitanje se nije stiglo ni udobno smjestiti.',
+    'Brže od vlastite sjene!',
+    'Mozak na optičkom internetu.',
+    'Jesmo li uopće stigli postaviti pitanje?',
+    'Neuroni očito nemaju ograničenje brzine.',
+    'Ovdje ni štoperica nema samopouzdanja.',
+    'Intelektualni sprint bez zagrijavanja!',
+  ],
+  // istek vremena
   isteklo: [
-    'Sat je bio brži.',
-    'Tišina je također odgovor. Ne točan, ali odgovor.',
-    'Odbrojavač ne zna za milost.',
-    'Pitanje je čekalo, čekalo, pa otišlo.',
-    'Vrijeme je isteklo. Pitanje odlazi kući razočarano.',
-    'Tik-tak, tik-tak... i gotovo.',
-    'Sat ne čeka nikoga. Ni najbolje kvizaše.',
-    'Ovdje je bila neka duboka misao. Šteta što nije stigla do tipkovnice.',
-    'Vrijeme leti kad se dobro razmišlja.',
-    'Odgovor je zapeo u gužvi na obilaznici.',
-    'Tišina u studiju. Čuje se samo cvrčak.',
-    'Pitanje je reklo: "Javi se kad odlučiš." I otišlo.',
-    'Odbrojavač je pobijedio. Opet.',
-    'Možda je i bolje ovako. Nikad nećemo saznati.',
-    'Vrijeme je isteklo, ali misao je sigurno bila genijalna.',
-    'Odgovor se još učitava. Nažalost, sat nije.',
+    'Vrijeme je isteklo, filozofiranje se nastavlja.',
+    'Dok smo razmišljali, pitanje je otišlo u mirovinu.',
+    'Temeljita analiza. Šteta što nije završena.',
+    'Vrijeme, za razliku od nas, nije imalo strpljenja.',
+    'Odgovor je vjerojatno još na putu.',
+    'Odluka je očito zahtijevala sjednicu upravnog odbora.',
   ],
+  // točan odgovor nakon 3 ili više pogrešnih zaredom
+  povratak: [
+    'Habemus odgovor!',
+    'Sustav je uspješno ponovno pokrenut.',
+    'Neuroni se vratili s godišnjeg!',
+    'Povratak otpisanih!',
+    'Feniks se digao iz pepela netočnih odgovora.',
+    'Mentalna služba ponovno je operativna.',
+    'Evo ga! Počela je druga sezona!',
+  ],
+  // djelomično točno: u zbirci nema posebnih poruka
+  djelomicno: [],
 };
 
+/** Niz točnih odgovora: poruka za točno taj broj zaredom. */
+export const NIZ_TOCNIH: Record<number, string> = {
+  3: 'Neuroni su se zagrijali!',
+  4: 'Ovo polako prestaje biti slučajnost.',
+  5: 'Mozak prešao u sportsku brzinu!',
+  6: 'Intelektualna mašinerija u punom pogonu.',
+  7: 'Konkurencija počinje preispitivati životne odluke.',
+  8: 'Molimo mozak da poštuje ograničenje brzine.',
+  9: 'Kviz počinje osjećati nelagodu.',
+  10: 'Aktiviran intelektualni terorizam nad pitanjima!',
+  15: 'Administracija kviza sazvala je krizni sastanak.',
+  20: 'Kviz je došao testirati tebe. Situacija se preokrenula.',
+  25: 'Predlažemo da ubuduće ti sastavljaš pitanja.',
+  30: 'Dobro, profesorska ekipo, možemo li mi sad kući?',
+};
+
+/** Niz pogrešnih odgovora: poruka za točno taj broj zaredom. */
+export const NIZ_NETOCNIH: Record<number, string> = {
+  2: 'Neuroni se još dogovaraju.',
+  3: 'Mozak je očito na pauzi za kavu.',
+  4: 'Trenutačno se testiraju alternativne činjenice.',
+  5: 'Imamo li rezervni plan ili improviziramo do kraja?',
+  6: 'Služba za mentalnu tehničku podršku je obaviještena.',
+  7: 'Ovo više nije niz. Ovo je umjetnički pravac.',
+  8: 'Svaki veliki povratak zahtijeva dramatičan početak.',
+};
+
+/** Završna poruka: ključ je najmanji postotak točnih (zaokruženo nadolje) za koji vrijedi. */
+export const KRAJ: Record<number, string> = {
+  100: 'Kviz je polagao ispit kod tebe. Položio je jedva.',
+  90: 'Intelektualna aristokracija.',
+  80: 'Mozak s premium pretplatom.',
+  70: 'Ozbiljna prijetnja prosjeku.',
+  60: 'Solidna mašinerija, povremeno zaškripi.',
+  50: 'Znanje i improvizacija u koaliciji.',
+  40: 'Potencijal postoji. Dokazi se još prikupljaju.',
+  20: 'Rezultat skroman, iskustvo neprocjenjivo.',
+  1: 'Danas smo više istraživali granice mogućeg.',
+  0: 'Statistički fascinantno. Čak je i slučajnost ostala bez teksta.',
+};
+
+/** Skrivena bonus poruka: na kraju kviza uz 100 % točnih. */
+export const BONUS = 'Poštovani, ovo je rekreativni kviz, a ne demonstracija intelektualne nadmoći. Molimo za malo kolegijalnosti.';
+
+/** Pojednostavljeno, samo za lokalni način (?lokalno); pravi odabir radi server. */
 export function odrediIshod(u: { tocno: boolean; bodovi: number; isteklo: boolean; niz: number; udioVremena: number; napustio?: boolean }): Ishod {
   if (u.napustio) return 'varanje';
   if (u.isteklo) return 'isteklo';
-  if (u.tocno && u.niz >= 3) return 'niz';
+  if (u.tocno && u.niz >= 3 && NIZ_TOCNIH[u.niz]) return 'niz';
   if (u.tocno && u.udioVremena >= 0.66) return 'brzo';
   if (u.tocno) return 'tocno';
   if (u.bodovi > 0) return 'djelomicno';
   return 'netocno';
 }
 
-export function odaberiKomentar(ishod: Ishod, rnd: () => number = Math.random): string {
+export function odaberiKomentar(ishod: Ishod, rnd: () => number = Math.random, niz = 0): string {
+  if (ishod === 'niz') return NIZ_TOCNIH[niz] ?? '';
   const popis = KOMENTARI[ishod];
-  return popis[Math.floor(rnd() * popis.length)];
+  return popis.length ? popis[Math.floor(rnd() * popis.length)] : '';
 }
