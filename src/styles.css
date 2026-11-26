@@ -519,3 +519,12 @@ button, input { font: inherit; color: inherit; }
 .nacin:hover:not(:disabled) { border-color: var(--zarulja); }
 .nacin:focus-visible { outline: 3px solid var(--zarulja); outline-offset: 2px; }
 .bez-sata .odbrojavac, .bez-sata .fitilj-staza, .bez-sata .pritisak { display: none; }
+
+/* ---------- Skrivena postignuća (faza D) ---------- */
+
+.postignuca { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .5rem; }
+.postignuce { display: flex; flex-direction: column; gap: .15rem; padding: .7rem .85rem; border: 2px dashed var(--rub); border-radius: var(--r); color: var(--prigušeno); }
+.postignuce strong { font-size: 1.05rem; }
+.postignuce small { font-size: .78rem; }
+.postignuce.osvojeno { border-style: solid; border-color: var(--zarulja); background: color-mix(in srgb, var(--zarulja) 10%, transparent); color: var(--tekst); }
+.postignuce.osvojeno strong { color: var(--zarulja); }

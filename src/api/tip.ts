@@ -88,6 +88,9 @@ export interface Api {
   pocniTrening(igracId: string, kategorija: KategorijaId): Promise<{ kvizId: string; brojPitanja: number }>;
   /** Način igre (trening bez rang-lista); rekord = najviše bodova igrača u tom načinu dosad. */
   pocniNacin(igracId: string, nacin: string): Promise<{ kvizId: string; brojPitanja: number; rekord: number }>;
+  /** Postignuća osvojena u ovom kvizu koja igrač još nije vidio (server ih označi viđenima). */
+  novaPostignuca(kvizId: string): Promise<string[]>;
+  mojaPostignuca(igracId: string): Promise<{ kod: string; kad: string }[]>;
   /** Rang-lista kvizova dana; bez kategorije = ukupna lista. */
   rangLista(igracId: string, razdoblje: Razdoblje, kategorija: KategorijaId | null): Promise<RangLista>;
   napraviLigu(igracId: string, naziv: string): Promise<{ kod: string; naziv: string }>;

@@ -122,3 +122,17 @@ export const REAKCIJE_IGRE = {
   nijeOboren: 'Jučerašnja verzija tebe šalje pozdrave.',
   smrt: 'Ego je preminuo. Uzrok smrti: jedan pogrešan odgovor.',
 };
+
+/** Skrivena postignuća (ideja 3). Nazivi iz PDF-a; uvjete provjerava server (migracija 0017). */
+export const POSTIGNUCA: { kod: string; naziv: string; opis: string }[] = [
+  { kod: 'sumnjivo', naziv: 'Sumnjivo lice', opis: 'Deset teških pitanja zaredom bez pogreške.' },
+  { kod: 'puz', naziv: 'Akademski puž', opis: 'Točan odgovor u posljednjoj sekundi.' },
+  { kod: 'steroidi', naziv: 'Neuron na steroidima', opis: 'Pet munjevito brzih točnih odgovora zaredom.' },
+  { kod: 'neznanje', naziv: 'Počivao u neznanju', opis: 'Pet pogrešnih odgovora zaredom.' },
+  { kod: 'povratak', naziv: 'Povratak iz mrtvih', opis: 'Pet točnih nakon pet pogrešnih.' },
+  { kod: 'doktorat', naziv: 'Doktorat iz samopouzdanja', opis: 'Pet izrazito brzih, ali pogrešnih odgovora.' },
+  { kod: 'snajperist', naziv: 'Snajperist činjenica', opis: 'Cijeli trening kategorije bez pogreške.' },
+  { kod: 'planet', naziv: 'Nije s ovog planeta', opis: 'Savršen rezultat u Intelektualnom paklu.' },
+  { kod: 'fenomen', naziv: 'Statistički fenomen', opis: 'Nijedan točan odgovor u cijeloj partiji.' },
+  { kod: 'neunistivi', naziv: 'Neuništivi ego', opis: 'Pet novih partija istog dana nakon lošeg rezultata.' },
+];

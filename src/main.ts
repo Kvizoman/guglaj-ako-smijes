@@ -9,7 +9,7 @@ import { nacrtajPlocu, type Ploca } from './ui/renderi';
 import { zvuk, jeUkljucen, prebaci } from './zvuk';
 import { mnoziteljNiza } from './bodovanje';
 import { nacrtajSvjedodzbu, uPng } from './ui/svjedodzba';
-import { NACINI, REAKCIJE_IGRE, nazivNacina, type NacinId } from './ui/karakter';
+import { NACINI, POSTIGNUCA, REAKCIJE_IGRE, nazivNacina, type NacinId } from './ui/karakter';
 import { ULAZ, PORUKE_SATA, REAKCIJE, obavijestPosjeta, porukaBijega, pravila, tekstIzazova, titula, tost } from './ui/karakter';
 
 // Pravi server (Supabase). Za razvoj bez interneta: dodaj ?lokalno na adresu.
@@ -225,6 +225,7 @@ async function pocetni(obavijest?: string) {
       h('div', { class: 'pocetna-dno' },
         h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: () => ekranPina(info.imaPin) },
           info.imaPin ? 'Promijeni PIN' : 'Postavi PIN za drugi uređaj'),
+        h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: jednimKlikom(ekranPostignuca) }, 'Skrivena postignuća'),
         h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: () => ekranPravila(() => pocetni()) }, ULAZ.pravila)),
       h('p', { class: 'dno-ega' }, ULAZ.dno),
     ),
@@ -592,6 +593,40 @@ async function ekranOdgovora(kod: string, naziv: string, dan: string, tjedanOd: 
   window.scrollTo(0, 0);
 }
 
+// ---------- Skrivena postignuća ----------
+
+async function javiPostignuca(kviz: string) {
+  let kodovi: string[];
+  try { kodovi = await api.novaPostignuca(kviz); } catch { return; }
+  kodovi.forEach((kod, i) => {
+    const p = POSTIGNUCA.find((x) => x.kod === kod);
+    if (p) setTimeout(() => { zvuk.tocno(); tost(`Skriveno postignuće: ${p.naziv}. ${p.opis}`, 5000); }, 600 + i * 5600);
+  });
+}
+
+async function ekranPostignuca() {
+  ugasiScenu();
+  document.body.style.removeProperty('--kat');
+  let moja: { kod: string; kad: string }[];
+  try { moja = await api.mojaPostignuca(igrac!.igracId); } catch (e) { greska(e); return; }
+  const osvojena = new Map(moja.map((m) => [m.kod, m.kad]));
+  ocisti(app);
+  app.append(h('main', { class: 'rang' },
+    h('div', { class: 'pocetna-vrh pocetna-vrh-igrac' },
+      h('button', { class: 'gumb gumb-sporedni gumb-mali', type: 'button', onclick: () => pocetni() }, 'Natrag'), gumbZvuka()),
+    h('h2', { class: 'naslov-ekrana' }, 'Skrivena postignuća'),
+    h('p', { class: 'napomena liga-podaci' }, `Osvojeno ${osvojena.size} od ${POSTIGNUCA.length}. Što skrivaju ostala, saznaje se igrajući.`),
+    h('ul', { class: 'postignuca' }, ...POSTIGNUCA.map((p) => {
+      const kad = osvojena.get(p.kod);
+      return kad
+        ? h('li', { class: 'postignuce osvojeno' }, h('strong', {}, p.naziv), h('span', {}, p.opis),
+          h('small', {}, `Osvojeno ${datum(kad.slice(0, 10))}${kad.slice(0, 4)}.`))
+        : h('li', { class: 'postignuce' }, h('strong', {}, '???'), h('span', {}, 'Skriveno postignuće.'));
+    })),
+  ));
+  window.scrollTo(0, 0);
+}
+
 // ---------- Pravila i izazov ----------
 
 function ekranPravila(natrag: () => void) {
@@ -792,6 +827,7 @@ async function pitanje(redni: number) {
     try {
       const r = await api.posaljiOdgovor(kvizId, redni, o, napustio);
       prikaziRezultat(r, ploca, dno, redni);
+      void javiPostignuca(kvizId);
     } catch (e) {
       greska(e);
     }
