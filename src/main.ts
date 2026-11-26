@@ -9,6 +9,7 @@ import { nacrtajPlocu, type Ploca } from './ui/renderi';
 import { zvuk, jeUkljucen, prebaci } from './zvuk';
 import { mnoziteljNiza } from './bodovanje';
 import { nacrtajSvjedodzbu, uPng } from './ui/svjedodzba';
+import { NACINI, REAKCIJE_IGRE, nazivNacina, type NacinId } from './ui/karakter';
 import { ULAZ, PORUKE_SATA, REAKCIJE, obavijestPosjeta, porukaBijega, pravila, tekstIzazova, titula, tost } from './ui/karakter';
 
 // Pravi server (Supabase). Za razvoj bez interneta: dodaj ?lokalno na adresu.
@@ -207,6 +208,11 @@ async function pocetni(obavijest?: string) {
           b.style.setProperty('--kat', k.boja);
           return b;
         })),
+      h('h2', { class: 'naslov-odjeljka' }, 'Načini igre'),
+      h('p', { class: 'napomena napomena-odjeljak' }, 'Za zabavu i rekorde. Ne ulaze u rang-liste.'),
+      h('div', { class: 'nacini' }, ...NACINI.map((n) => h('button', {
+        type: 'button', class: 'nacin', onclick: jednimKlikom(() => igrajNacin(n.id)),
+      }, h('strong', {}, n.naziv), h('span', {}, n.opis)))),
       h('h2', { class: 'naslov-odjeljka' }, 'Lige'),
       h('p', { class: 'napomena napomena-odjeljak' }, 'Tjedno natjecanje s ekipom, od ponedjeljka do nedjelje. Ulazi se pozivnicom.'),
       lige.length > 0
@@ -605,7 +611,8 @@ function ekranPravila(natrag: () => void) {
 function gumbSvjedodzbe(d: { titula: string; postotak: number; najduljiNiz: number; bodovi: number; vrsta: typeof vrsta }): HTMLElement {
   const sada = new Date();
   const prilika = d.vrsta === 'dnevni' ? `u kvizu dana ${sada.getDate()}.${sada.getMonth() + 1}.${sada.getFullYear()}.`
-    : d.vrsta === 'trening' ? `na treningu iz kategorije ${KATEGORIJE[treningKat].naziv}` : 'u probnoj igri';
+    : d.vrsta === 'trening' ? `na treningu iz kategorije ${KATEGORIJE[treningKat].naziv}`
+    : d.vrsta === 'nacin' ? `u načinu igre ${nazivNacina(nacin)}` : 'u probnoj igri';
   const mjesto = h('div', { class: 'svjedodzba', hidden: true });
   const gumb = h('button', {
     class: 'gumb gumb-sporedni', type: 'button',
@@ -652,7 +659,10 @@ function gumbIzazova(bodovi: number): HTMLElement {
 
 let kvizId = '';
 let ukupnoPitanja = 0;
-let vrsta: 'dnevni' | 'trening' | 'probni' = 'probni';
+let vrsta: 'dnevni' | 'trening' | 'probni' | 'nacin' = 'probni';
+let nacin: NacinId = 'rulet';
+/** Rekord u trenutnom načinu prije ove igre. */
+let rekordNacina = 0;
 let treningKat: KategorijaId = 'povijest';
 /** Gasi sat i slušače prethodnog pitanja kad se prikaže novo. */
 let ugasiScenu = () => {};
@@ -700,6 +710,22 @@ async function igrajDnevni() {
   }
 }
 
+async function igrajNacin(n: NacinId) {
+  try {
+    const k = await api.pocniNacin(igrac!.igracId, n);
+    vrsta = 'nacin';
+    nacin = n;
+    rekordNacina = k.rekord;
+    kvizId = k.kvizId;
+    ukupnoPitanja = k.brojPitanja;
+    await pitanje(0);
+    if (n === 'kava') tost(REAKCIJE_IGRE.najlaksa);
+    else if (n === 'pakao') tost(REAKCIJE_IGRE.najteza);
+    else if (n === 'obracun') tost(k.rekord > 0 ? `Rekord za srušiti: ${k.rekord} bodova.` : 'Prvi obračun. Što god napraviš, bit će rekord.');
+  } catch (e) {
+    greska(e);
+  }
+}
 async function igrajTrening(kat: KategorijaId) {
   try {
     const k = await api.pocniTrening(igrac!.igracId, kat);
@@ -799,6 +825,7 @@ async function pitanje(redni: number) {
 
   app.append(scena);
   ploca.fokus?.();
+  if (vrsta === 'nacin' && nacin === 'kava') { scena.classList.add('bez-sata'); return; }
   zaustaviTajmer = pokreniTajmer(broj, fitilj, p.vrijemeMs, () => {
     void posalji(ploca.trenutniOdgovor?.() ?? { vrsta: 'nista' });
   }, p.vrijemeMs, (s) => {
@@ -814,7 +841,8 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
 
   const naslov = r.istekloVrijeme ? 'Vrijeme je isteklo'
     : r.tocno ? 'Točno' : djelomicno ? 'Djelomično' : 'Netočno';
-  const zadnje = redni + 1 >= ukupnoPitanja;
+  const smrt = vrsta === 'nacin' && nacin === 'smrt' && !r.tocno;
+  const zadnje = redni + 1 >= ukupnoPitanja || smrt;
   const dalje = h('button', {
     class: 'gumb gumb-glavni', type: 'button',
     onclick: jednimKlikom(() => (zadnje ? kraj(r.ukupnoBodova, vrsta, false, r.zavrsno) : pitanje(redni + 1))),
@@ -826,6 +854,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
         h('h2', { class: 'presuda-naslov' }, naslov),
         h('div', { class: 'presuda-bodovi' }, `+${r.bodovi}`)),
       r.komentar ? h('p', { class: 'presuda-komentar' }, r.komentar) : null,
+      smrt ? h('p', { class: 'presuda-bonus' }, REAKCIJE_IGRE.smrt) : null,
       r.bonus ? h('p', { class: 'presuda-bonus' }, r.bonus) : null,
       r.niz > 1 ? h('p', { class: 'presuda-niz' }, `Niz točnih: ${r.niz}, bodovi ×${mnoziteljNiza(r.niz).toFixed(1).replace('.', ',')}`) : null,
       r.napustio ? h('p', { class: 'presuda-napustio' }, 'Bodovi su prepolovljeni zbog izlaska iz igre.') : null,
@@ -863,12 +892,20 @@ function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: strin
   ocisti(app);
   const opis = v === 'dnevni'
     ? (odranije ? 'bodova u današnjem kvizu. Odigran je, novi stiže u ponoć.' : 'bodova u kvizu dana. Novi stiže u ponoć.')
-    : v === 'trening' ? `bodova na treningu: ${KATEGORIJE[treningKat].naziv}` : 'bodova u probnoj igri. Ovo se ne broji nigdje, prava igra je kviz dana.';
+    : v === 'trening' ? `bodova na treningu: ${KATEGORIJE[treningKat].naziv}`
+    : v === 'nacin' ? `bodova: ${nazivNacina(nacin)}`
+    : 'bodova u probnoj igri. Ovo se ne broji nigdje, prava igra je kviz dana.';
+  const rekordEl = v === 'nacin' && (bodovi > 0 || rekordNacina > 0)
+    ? h('p', { class: 'kraj-poruka' }, bodovi > rekordNacina
+      ? `${REAKCIJE_IGRE.oborenRekord} Novi rekord: ${bodovi}.`
+      : `${REAKCIJE_IGRE.nijeOboren} Rekord ostaje ${rekordNacina}.`)
+    : null;
   app.append(
     h('main', { class: 'kraj' },
       h('p', { class: 'kraj-oznaka' }, v === 'dnevni' && odranije ? 'Kviz dana' : 'Konačni rezultat'),
       h('div', { class: 'kraj-bodovi' }, String(bodovi)),
       h('p', { class: 'kraj-tekst' }, opis),
+      rekordEl,
       titulaEl,
       zavrsnoEl,
       v === 'dnevni' ? gumbIzazova(bodovi) : null,
@@ -877,6 +914,9 @@ function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: strin
         : null,
       v === 'trening'
         ? h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'button', onclick: jednimKlikom(() => igrajTrening(treningKat)) }, 'Još jedan trening')
+        : null,
+      v === 'nacin'
+        ? h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'button', onclick: jednimKlikom(() => igrajNacin(nacin)) }, 'Još jednom')
         : null,
       h('button', { class: `gumb ${v === 'probni' ? 'gumb-glavni gumb-velik' : 'gumb-sporedni'}`, type: 'button', onclick: () => pocetni() }, 'Na početak'),
     ),

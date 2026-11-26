@@ -86,6 +86,8 @@ export interface Api {
   pocniDnevni(igracId: string): Promise<StanjeDnevnog>;
   /** Trening: 10 nasumičnih pitanja iz kategorije, ne ulazi u rang-liste. */
   pocniTrening(igracId: string, kategorija: KategorijaId): Promise<{ kvizId: string; brojPitanja: number }>;
+  /** Način igre (trening bez rang-lista); rekord = najviše bodova igrača u tom načinu dosad. */
+  pocniNacin(igracId: string, nacin: string): Promise<{ kvizId: string; brojPitanja: number; rekord: number }>;
   /** Rang-lista kvizova dana; bez kategorije = ukupna lista. */
   rangLista(igracId: string, razdoblje: Razdoblje, kategorija: KategorijaId | null): Promise<RangLista>;
   napraviLigu(igracId: string, naziv: string): Promise<{ kod: string; naziv: string }>;

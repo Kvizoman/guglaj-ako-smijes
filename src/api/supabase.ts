@@ -61,6 +61,9 @@ export class SupabaseApi implements Api {
   pocniTrening(igracId: string, kategorija: KategorijaId) {
     return rpc<{ kvizId: string; brojPitanja: number }>('pocni_trening', { p_igrac: igracId, p_kategorija: kategorija });
   }
+  pocniNacin(igracId: string, nacin: string) {
+    return rpc<{ kvizId: string; brojPitanja: number; rekord: number }>('pocni_nacin', { p_igrac: igracId, p_nacin: nacin });
+  }
   rangLista(igracId: string, razdoblje: Razdoblje, kategorija: KategorijaId | null) {
     return rpc<RangLista>('rang_lista', { p_igrac: igracId, p_razdoblje: razdoblje, p_kategorija: kategorija });
   }

@@ -124,6 +124,7 @@ export class LokalniApi implements Api {
   async liga(): Promise<never> { return this.bezLiga(); }
   async ligaOdgovori(): Promise<never> { return this.bezLiga(); }
   async rezultatKviza() { return null; }
+  async pocniNacin(): Promise<never> { throw new Error('Načini igre rade samo sa serverom (bez ?lokalno).'); }
   async preimenujLigu(): Promise<string> { return this.bezLiga(); }
   async ukloniClana(): Promise<boolean> { return this.bezLiga(); }
 

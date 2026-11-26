@@ -99,3 +99,26 @@ export function pravila(): HTMLElement {
     stavka('Rang-liste i lige.', 'Broje se samo kvizovi dana. Trening je za vježbu i ne ulazi nigdje.'),
   );
 }
+
+/** Načini igre (ideja 5). Svi su trening: ne ulaze u rang-liste. */
+export type NacinId = 'kava' | 'pakao' | 'smrt' | 'autocesta' | 'rulet' | 'obracun';
+export const NACINI: { id: NacinId; naziv: string; opis: string }[] = [
+  { id: 'kava', naziv: 'Mozak uz kavu', opis: 'Opuštena igra bez vremenskog ograničenja.' },
+  { id: 'pakao', naziv: 'Intelektualni pakao', opis: 'Samo teška pitanja. Bez milosti.' },
+  { id: 'smrt', naziv: 'Iznenadna smrt ega', opis: 'Prvi pogrešan odgovor završava igru.' },
+  { id: 'autocesta', naziv: 'Mozak na autocesti', opis: 'Pet sekundi za svako pitanje.' },
+  { id: 'rulet', naziv: 'Ruski rulet znanja', opis: 'Nasumične kategorije i razine težine.' },
+  { id: 'obracun', naziv: 'Obračun s vlastitim egom', opis: 'Pokušaj nadmašiti vlastiti rekord.' },
+];
+export function nazivNacina(id: NacinId): string {
+  return NACINI.find((n) => n.id === id)!.naziv;
+}
+
+/** Reakcije na razinu i rekord (ideja 9). */
+export const REAKCIJE_IGRE = {
+  najlaksa: 'Ambicije su nam danas na godišnjem.',
+  najteza: 'Ili si genijalac ili ne znaš u što se upuštaš.',
+  oborenRekord: 'Ego je uspješno nadograđen.',
+  nijeOboren: 'Jučerašnja verzija tebe šalje pozdrave.',
+  smrt: 'Ego je preminuo. Uzrok smrti: jedan pogrešan odgovor.',
+};
