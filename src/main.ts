@@ -8,6 +8,7 @@ import { pokreniTajmer } from './ui/tajmer';
 import { nacrtajPlocu, type Ploca } from './ui/renderi';
 import { zvuk, jeUkljucen, prebaci } from './zvuk';
 import { mnoziteljNiza } from './bodovanje';
+import { nacrtajSvjedodzbu, uPng } from './ui/svjedodzba';
 import { ULAZ, PORUKE_SATA, REAKCIJE, obavijestPosjeta, porukaBijega, pravila, tekstIzazova, titula, tost } from './ui/karakter';
 
 // Pravi server (Supabase). Za razvoj bez interneta: dodaj ?lokalno na adresu.
@@ -601,6 +602,36 @@ function ekranPravila(natrag: () => void) {
   window.scrollTo(0, 0);
 }
 
+function gumbSvjedodzbe(d: { titula: string; postotak: number; najduljiNiz: number; bodovi: number; vrsta: typeof vrsta }): HTMLElement {
+  const sada = new Date();
+  const prilika = d.vrsta === 'dnevni' ? `u kvizu dana ${sada.getDate()}.${sada.getMonth() + 1}.${sada.getFullYear()}.`
+    : d.vrsta === 'trening' ? `na treningu iz kategorije ${KATEGORIJE[treningKat].naziv}` : 'u probnoj igri';
+  const mjesto = h('div', { class: 'svjedodzba', hidden: true });
+  const gumb = h('button', {
+    class: 'gumb gumb-sporedni', type: 'button',
+    onclick: async () => {
+      if (!mjesto.hidden) { mjesto.hidden = true; return; }
+      const platno = nacrtajSvjedodzbu({ ...d, nadimak: igrac?.nadimak ?? null, prilika, adresa: location.origin + location.pathname });
+      const blob = await uPng(platno);
+      const datoteka = new File([blob], 'svjedodzba-guglaj-ako-smijes.png', { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
+      const moguDijeliti = typeof navigator.canShare === 'function' && navigator.canShare({ files: [datoteka] });
+      mjesto.replaceChildren(
+        h('img', { class: 'svjedodzba-slika', src: url, alt: `Svjedodžba o intelektualnom stanju: ${d.titula}, ${d.postotak} % uspješnost.` }),
+        h('div', { class: 'svjedodzba-gumbi' },
+          moguDijeliti
+            ? h('button', { class: 'gumb gumb-glavni', type: 'button', onclick: async () => {
+              try { await navigator.share({ files: [datoteka], text: 'Guglaj ako smiješ!' }); } catch { /* odustao */ }
+            } }, 'Podijeli')
+            : null,
+          h('a', { class: 'gumb gumb-sporedni', href: url, download: datoteka.name }, 'Preuzmi sliku')));
+      mjesto.hidden = false;
+      mjesto.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+  }, 'Svjedodžba o intelektualnom stanju');
+  return h('div', { class: 'svjedodzba-blok' }, gumb, mjesto);
+}
+
 function gumbIzazova(bodovi: number): HTMLElement {
   const tekst = tekstIzazova(bodovi);
   const adresa = location.origin + location.pathname;
@@ -821,6 +852,7 @@ function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: strin
         h('strong', {}, t),
         h('span', { class: 'kraj-titula-brojke' }, `${postotak} % točnih · najdulji niz ${r.najduljiNiz}`));
       titulaEl.hidden = false;
+      titulaEl.after(gumbSvjedodzbe({ titula: t, postotak, najduljiNiz: r.najduljiNiz, bodovi, vrsta: v }));
       // ista rečenica kao završna poruka (npr. Intelektualna aristokracija): ne ponavljaj
       if (zavrsnoEl && zavrsnoEl.textContent!.replace(/\.$/, '') === t) zavrsnoEl.remove();
     }).catch(() => {});

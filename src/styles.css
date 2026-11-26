@@ -497,3 +497,11 @@ button, input { font: inherit; color: inherit; }
   font-weight: 650; box-shadow: 0 8px 24px rgb(0 0 0 / .4); transition: opacity .35s, transform .35s;
 }
 .tost-van { opacity: 0; transform: translate(-50%, .6rem); }
+
+/* ---------- Svjedodžba (faza B) ---------- */
+
+.svjedodzba-blok { display: flex; flex-direction: column; gap: .8rem; width: 100%; }
+.svjedodzba { display: flex; flex-direction: column; gap: .7rem; }
+.svjedodzba-slika { width: 100%; max-width: 27rem; height: auto; border-radius: 4px; box-shadow: 0 10px 30px rgb(0 0 0 / .45); }
+.svjedodzba-gumbi { display: flex; flex-wrap: wrap; gap: .5rem; }
+.svjedodzba-gumbi .gumb { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
