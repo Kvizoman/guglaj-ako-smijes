@@ -96,7 +96,7 @@ export interface Rezultat {
   komentar: string;
   /** Samo nakon zadnjeg pitanja: poruka prema postotku točnih. */
   zavrsno?: string;
-  /** Samo nakon zadnjeg pitanja uz 100 % točnih: skrivena bonus poruka. */
+  /** Samo nakon 15. točnog odgovora zaredom: skrivena bonus poruka. */
   bonus?: string;
   tocanIndeks?: number;          // u izmiješanom poretku
   tvrdnjeTocno?: boolean[];

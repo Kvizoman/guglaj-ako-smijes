@@ -741,7 +741,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
   const zadnje = redni + 1 >= ukupnoPitanja;
   const dalje = h('button', {
     class: 'gumb gumb-glavni', type: 'button',
-    onclick: jednimKlikom(() => (zadnje ? kraj(r.ukupnoBodova, vrsta, false, r.zavrsno, r.bonus) : pitanje(redni + 1))),
+    onclick: jednimKlikom(() => (zadnje ? kraj(r.ukupnoBodova, vrsta, false, r.zavrsno) : pitanje(redni + 1))),
   }, zadnje ? 'Pogledaj rezultat' : 'Sljedeće pitanje');
 
   dno.replaceChildren(
@@ -750,6 +750,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
         h('h2', { class: 'presuda-naslov' }, naslov),
         h('div', { class: 'presuda-bodovi' }, `+${r.bodovi}`)),
       r.komentar ? h('p', { class: 'presuda-komentar' }, r.komentar) : null,
+      r.bonus ? h('p', { class: 'presuda-bonus' }, r.bonus) : null,
       r.niz > 1 ? h('p', { class: 'presuda-niz' }, `Niz točnih: ${r.niz}, bodovi ×${mnoziteljNiza(r.niz).toFixed(1).replace('.', ',')}`) : null,
       r.napustio ? h('p', { class: 'presuda-napustio' }, 'Bodovi su prepolovljeni zbog izlaska iz igre.') : null,
       h('p', { class: 'presuda-tocno' }, h('span', {}, 'Točan odgovor: '), h('strong', {}, r.prikazTocno)),
@@ -761,7 +762,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
   dalje.focus({ preventScroll: true });
 }
 
-function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: string, bonus?: string) {
+function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: string) {
   ugasiScenu();
   document.body.style.removeProperty('--kat');
   if (!odranije) zvuk.kraj();
@@ -775,7 +776,6 @@ function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: strin
       h('div', { class: 'kraj-bodovi' }, String(bodovi)),
       h('p', { class: 'kraj-tekst' }, opis),
       zavrsno ? h('p', { class: 'kraj-poruka' }, zavrsno) : null,
-      bonus ? h('p', { class: 'kraj-bonus' }, bonus) : null,
       v === 'dnevni'
         ? h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'button', onclick: jednimKlikom(() => ekranRangListe('dan')) }, 'Rang-lista dana')
         : null,

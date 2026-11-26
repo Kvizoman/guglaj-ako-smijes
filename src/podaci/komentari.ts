@@ -8,7 +8,7 @@
 //   točno:    niz (točno taj broj) > povratak (nakon 3+ pogrešnih) > tesko (težina 3) > brzo > tocno
 //   netočno:  varanje > prekid (prekinut niz od 5+) > nizNetocnih (točno taj broj) > isteklo > lako (težina 1) > netocno
 //   djelomično točno: samo prekid ili nizNetocnih, inače bez poruke
-//   kraj kviza: poruka za postotak točnih; bonus uz 100 %
+//   kraj kviza: poruka za postotak točnih; bonus nakon 15. točnog zaredom
 
 export type Ishod =
   | 'varanje' | 'brzo' | 'tocno' | 'tesko' | 'povratak'
@@ -177,7 +177,7 @@ export const KRAJ: Record<number, string> = {
   0: 'Statistički fascinantno. Čak je i slučajnost ostala bez teksta.',
 };
 
-/** Skrivena bonus poruka: na kraju kviza uz 100 % točnih. */
+/** Skrivena bonus poruka: nakon 15. točnog odgovora zaredom (uz poruku za niz 15). */
 export const BONUS = 'Poštovani, ovo je rekreativni kviz, a ne demonstracija intelektualne nadmoći. Molimo za malo kolegijalnosti.';
 
 /** Pojednostavljeno, samo za lokalni način (?lokalno); pravi odabir radi server. */
