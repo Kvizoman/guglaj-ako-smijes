@@ -29,6 +29,34 @@ export interface Liga {
   /** pobjednici prošlih tjedana, najnoviji prvi */
   pobjednici: PobjednikTjedna[];
 }
+export interface OdgovorClana {
+  nadimak: string;
+  ja: boolean;
+  /** odgovor kao čitljiv tekst */
+  odgovor: string;
+  tocno: boolean;
+  bodovi: number;
+  sekunde: number;
+}
+export interface PitanjeUsporedbe {
+  redni: number;
+  kategorija: KategorijaId;
+  tip: string;
+  tekst: string;
+  /** točan odgovor */
+  tocno: string;
+  odgovori: OdgovorClana[];
+}
+export interface UsporedbaOdgovora {
+  dan: string;
+  /** false: taj dan nisam igrao(la) (danas: nisam završio(la)), odgovori drugih su skriveni */
+  otvoreno: boolean;
+  /** zašto je zatvoreno: danas nije završio(la) ili taj dan nije igrao(la) */
+  razlog?: 'nije_zavrsio' | 'nije_igrao';
+  pitanja: PitanjeUsporedbe[];
+  igraci: { nadimak: string; ja: boolean; bodovi: number; tocnih: number }[];
+  nisuIgrali: string[];
+}
 export interface StanjeDnevnog {
   dan: string;
   ukupnoBodova: number;
@@ -66,6 +94,8 @@ export interface Api {
   mojeLige(igracId: string): Promise<MojaLiga[]>;
   /** tjedan: bilo koji dan tog tjedna (YYYY-MM-DD), null = ovaj tjedan */
   liga(igracId: string, kod: string, tjedan: string | null, kategorija: KategorijaId | null): Promise<Liga>;
+  /** Odgovori članova lige za kviz jednog dana (YYYY-MM-DD). Današnji samo nakon što ga sam završiš. */
+  ligaOdgovori(igracId: string, kod: string, dan: string): Promise<UsporedbaOdgovora>;
   preimenujLigu(igracId: string, kod: string, naziv: string): Promise<string>;
   ukloniClana(igracId: string, kod: string, nadimak: string): Promise<boolean>;
   /** Pokreće serversko mjerenje vremena za to pitanje. */

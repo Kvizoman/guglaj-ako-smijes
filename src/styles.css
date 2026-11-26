@@ -443,3 +443,36 @@ button, input { font: inherit; color: inherit; }
 .gumb-opasno { border-color: var(--opasno); color: var(--opasno); }
 .isprobaj { display: flex; flex-direction: column; gap: .4rem; }
 .isprobaj .napomena { margin: 0; }
+
+/* ---------- Usporedba odgovora u ligi ---------- */
+
+.usp-dani { display: grid; grid-template-columns: repeat(7, 1fr); border: 2px solid var(--rub); border-radius: var(--r); overflow: hidden; }
+.usp-dani .rang-razdoblje { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem; padding: .3rem 0; font-size: .95rem; min-height: 3.25rem; }
+.usp-dani .rang-razdoblje small { font-weight: 600; font-size: .72rem; opacity: .85; }
+.usp-dani .rang-razdoblje:disabled { opacity: .35; cursor: default; }
+.usp-popis { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .9rem; }
+.usp-pitanje {
+  display: flex; flex-direction: column; gap: .5rem; padding: .8rem .9rem;
+  background: var(--ploca); border: 2px solid var(--rub); border-left: 6px solid var(--kat); border-radius: var(--r);
+}
+.usp-zaglavlje { display: flex; align-items: center; gap: .5rem; color: var(--kat); font-weight: 800; font-size: .9rem; }
+.usp-kat { display: grid; place-items: center; }
+.usp-kat .ikona { width: 1.25rem; height: 1.25rem; }
+.usp-tekst { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.usp-tocno { margin: 0; color: var(--tocno); font-weight: 800; overflow-wrap: anywhere; }
+.usp-tocno span { color: var(--prigušeno); font-weight: 650; }
+.usp-odgovori { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.usp-odgovor { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: .5rem; align-items: center; padding: .45rem .2rem; border-top: 1px solid var(--rub); }
+.usp-znak { font-weight: 900; font-size: 1.15rem; text-align: center; }
+.usp-da .usp-znak { color: var(--tocno); }
+.usp-djelom .usp-znak { color: var(--djelomicno); }
+.usp-ne .usp-znak { color: var(--opasno); }
+.usp-tko { display: flex; flex-direction: column; min-width: 0; }
+.usp-nadimak { font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usp-sto { color: var(--prigušeno); font-size: .9rem; overflow-wrap: anywhere; }
+.usp-ne .usp-sto { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--opasno) 60%, transparent); }
+.usp-brojke { display: flex; flex-direction: column; align-items: flex-end; }
+.usp-bodovi { font-family: var(--slova-semafor); font-size: 1.35rem; line-height: 1; }
+.usp-sekunde { color: var(--prigušeno); font-size: .78rem; }
+.usp-ja { background: color-mix(in srgb, var(--zarulja) 14%, transparent); }
+.usp-ja .usp-nadimak::after { content: ' (ti)'; color: var(--zarulja); font-weight: 650; }

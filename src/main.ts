@@ -1,5 +1,5 @@
 import './styles.css';
-import type { Api, Igrac, Liga, MojaLiga, RangLista, Razdoblje, RedListe } from './api/tip';
+import type { Api, Igrac, Liga, MojaLiga, PitanjeUsporedbe, RangLista, Razdoblje, RedListe, UsporedbaOdgovora } from './api/tip';
 import type { JavnoPitanje, KategorijaId, Odgovor, Rezultat } from './tipovi';
 import { SupabaseApi } from './api/supabase';
 import { KATEGORIJE, NAZIV_TIPA, ikonaSvg } from './kategorije';
@@ -236,10 +236,10 @@ function datum(iso: string): string {
   return `${Number(d)}.${Number(m)}.`;
 }
 
-function redListe(r: RedListe): HTMLElement {
+function redListe(r: RedListe, podnaslov?: string): HTMLElement {
   return h('li', { class: `rang-red${r.ja ? ' rang-ja' : ''}`, 'aria-current': r.ja ? 'true' : null },
     h('span', { class: 'rang-mjesto' }, `${r.mjesto}.`),
-    h('span', { class: 'rang-ime' }, h('span', { class: 'rang-nadimak' }, r.nadimak), h('span', { class: 'rang-dana' }, `${r.dana} ${danaRijec(r.dana)}`)),
+    h('span', { class: 'rang-ime' }, h('span', { class: 'rang-nadimak' }, r.nadimak), h('span', { class: 'rang-dana' }, podnaslov ?? `${r.dana} ${danaRijec(r.dana)}`)),
     h('span', { class: 'rang-bodovi' }, String(r.bodovi)));
 }
 
@@ -280,7 +280,7 @@ async function ekranRangListe(razdoblje: Razdoblje = 'dan', kat: KategorijaId | 
     ? h('p', { class: 'rang-prazno' }, razdoblje === 'dan'
       ? 'Danas još nitko nema bodova. Odigraj kviz dana i budi prvi na listi.'
       : 'U ovom razdoblju još nitko nema bodova.')
-    : h('ol', { class: 'rang-popis' }, ...l.redovi.map(redListe),
+    : h('ol', { class: 'rang-popis' }, ...l.redovi.map((r) => redListe(r)),
       l.moj && !mojMeduPrvima ? h('li', { class: 'rang-razmak', 'aria-hidden': 'true' }, '…') : null,
       l.moj && !mojMeduPrvima ? redListe(l.moj) : null);
 
@@ -468,11 +468,111 @@ async function ekranLige(kod: string, tjedan: string | null = null, kat: Kategor
       : null,
     kategorije,
     h('p', { class: 'rang-opis' }, `${kat ? KATEGORIJE[kat].naziv : 'Sve kategorije'}: zbroj kvizova dana u tjednu`),
-    h('ol', { class: 'rang-popis' }, ...l.redovi.map(redListe)),
+    h('ol', { class: 'rang-popis' }, ...l.redovi.map((r) => redListe(r))),
+    h('button', {
+      class: 'gumb gumb-glavni', type: 'button',
+      onclick: () => ekranOdgovora(kod, l.naziv, l.ovajTjedan ? danasIso() : l.tjedanDo, l.tjedanOd),
+    }, 'Usporedi odgovore'),
     h('h3', { class: 'naslov-pododjeljka' }, 'Dvorana slavnih'),
     dvorana,
     blokPozivnice(l.kod, l.naziv),
     l.osnivac ? blokUredivanja(l, tjedan, kat) : null,
+  ));
+  window.scrollTo(0, 0);
+}
+
+// ---------- Usporedba odgovora u ligi ----------
+
+const DANI_KRATKO = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'];
+
+/** Današnji dan po Europe/Sarajevo, kao i na serveru (YYYY-MM-DD). */
+function danasIso(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sarajevo' }).format(new Date());
+}
+function dodajDane(iso: string, n: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function karticaPitanja(p: PitanjeUsporedbe, ukupno: number): HTMLElement {
+  const k = KATEGORIJE[p.kategorija];
+  const kartica = h('li', { class: 'usp-pitanje' },
+    h('div', { class: 'usp-zaglavlje' },
+      h('span', { class: 'usp-kat', html: ikonaSvg(p.kategorija) }),
+      h('span', {}, `${p.redni}/${ukupno} · ${k.naziv}`)),
+    h('p', { class: 'usp-tekst' }, p.tekst),
+    h('p', { class: 'usp-tocno' }, h('span', {}, 'Točno: '), p.tocno),
+    p.odgovori.length === 0
+      ? h('p', { class: 'obrazac-pomoc' }, 'Nitko još nije odgovorio.')
+      : h('ul', { class: 'usp-odgovori' }, ...p.odgovori.map((o) =>
+        h('li', { class: `usp-odgovor ${o.tocno ? 'usp-da' : o.bodovi > 0 ? 'usp-djelom' : 'usp-ne'}${o.ja ? ' usp-ja' : ''}` },
+          h('span', { class: 'usp-znak', 'aria-label': o.tocno ? 'točno' : 'netočno' }, o.tocno ? '✓' : o.bodovi > 0 ? '½' : '✗'),
+          h('span', { class: 'usp-tko' },
+            h('span', { class: 'usp-nadimak' }, o.nadimak),
+            h('span', { class: 'usp-sto' }, o.odgovor)),
+          h('span', { class: 'usp-brojke' },
+            h('span', { class: 'usp-bodovi' }, String(o.bodovi)),
+            h('span', { class: 'usp-sekunde' }, `${String(o.sekunde).replace('.', ',')} s`))))),
+  );
+  kartica.style.setProperty('--kat', k.boja);
+  return kartica;
+}
+
+async function ekranOdgovora(kod: string, naziv: string, dan: string, tjedanOd: string) {
+  ugasiScenu();
+  document.body.style.removeProperty('--kat');
+  const danas = danasIso();
+  let u: UsporedbaOdgovora;
+  try {
+    u = await api.ligaOdgovori(igrac!.igracId, kod, dan);
+  } catch (e) {
+    await ekranLige(kod, null, null, e instanceof Error ? e.message : String(e));
+    return;
+  }
+
+  const dani = h('div', { class: 'usp-dani', role: 'group', 'aria-label': 'Dan' },
+    ...DANI_KRATKO.map((ime, i) => {
+      const d = dodajDane(tjedanOd, i);
+      return h('button', {
+        type: 'button', class: 'rang-razdoblje', 'aria-pressed': String(d === dan), disabled: d > danas ? true : null,
+        onclick: () => ekranOdgovora(kod, naziv, d, tjedanOd),
+      }, h('span', {}, ime), h('small', {}, datum(d)));
+    }));
+
+  let sadrzaj: (Node | null)[];
+  if (!u.otvoreno && dan === danas) {
+    sadrzaj = [
+      h('p', { class: 'rang-prazno' }, u.razlog === 'nije_zavrsio'
+        ? 'Današnje odgovore ostalih vidiš kad završiš današnji kviz. Bez prepisivanja!'
+        : 'Današnje odgovore ostalih vidiš tek kad odigraš današnji kviz. Bez prepisivanja!'),
+      h('button', { class: 'gumb gumb-glavni', type: 'button', onclick: jednimKlikom(igrajDnevni) },
+        u.razlog === 'nije_zavrsio' ? 'Nastavi kviz dana' : 'Igraj kviz dana'),
+    ];
+  } else if (!u.otvoreno) {
+    sadrzaj = [h('p', { class: 'rang-prazno' }, `Tvog kviza dana za ${datum(u.dan)} nema, pa ni tuđi odgovori nisu vidljivi. Usporedba radi samo za dane koje imaš odigrane.`)];
+  } else if (u.pitanja.length === 0 || u.igraci.length === 0) {
+    sadrzaj = [h('p', { class: 'rang-prazno' }, 'Taj dan nitko iz lige nije igrao kviz dana.')];
+  } else {
+    sadrzaj = [
+      h('h3', { class: 'naslov-pododjeljka' }, `Poredak dana ${datum(u.dan)}`),
+      h('ol', { class: 'rang-popis' }, ...u.igraci.map((g, _i, svi) => redListe({
+        mjesto: svi.findIndex((x) => x.bodovi === g.bodovi) + 1, nadimak: g.nadimak, bodovi: g.bodovi, dana: 0, ja: g.ja,
+      }, `točnih ${g.tocnih} od ${u.pitanja.length}`))),
+      u.nisuIgrali.length > 0 ? h('p', { class: 'napomena' }, `Nisu igrali: ${u.nisuIgrali.join(', ')}.`) : null,
+      h('h3', { class: 'naslov-pododjeljka' }, 'Pitanje po pitanje'),
+      h('ol', { class: 'usp-popis' }, ...u.pitanja.map((p) => karticaPitanja(p, u.pitanja.length))),
+    ];
+  }
+
+  ocisti(app);
+  app.append(h('main', { class: 'rang liga usp' },
+    h('div', { class: 'pocetna-vrh pocetna-vrh-igrac' },
+      h('button', { class: 'gumb gumb-sporedni gumb-mali', type: 'button', onclick: () => ekranLige(kod, tjedanOd) }, 'Natrag na ligu'), gumbZvuka()),
+    h('h2', { class: 'naslov-ekrana' }, 'Usporedba odgovora'),
+    h('p', { class: 'napomena liga-podaci' }, naziv),
+    dani,
+    ...sadrzaj,
   ));
   window.scrollTo(0, 0);
 }
