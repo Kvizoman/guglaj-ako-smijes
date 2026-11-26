@@ -10,6 +10,7 @@ export function pokreniTajmer(
   ukupnoMs: number,
   naIstek: () => void,
   pocetnoMs = ukupnoMs,
+  naSekundu?: (sekunde: number) => void,
 ): () => void {
   const kraj = performance.now() + pocetnoMs;
   let zadnjaSekunda = -1;
@@ -28,6 +29,7 @@ export function pokreniTajmer(
       broj.classList.toggle('gori', gori);
       fitilj.classList.toggle('gori', gori);
       if (sekunde > 0) zvuk.otkucaj(sekunde);
+      naSekundu?.(sekunde);
     }
     fitilj.style.transform = `scaleX(${preostalo / ukupnoMs})`;
     if (preostalo <= 0) {

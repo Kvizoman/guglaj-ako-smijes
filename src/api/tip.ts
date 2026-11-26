@@ -57,6 +57,7 @@ export interface UsporedbaOdgovora {
   igraci: { nadimak: string; ja: boolean; bodovi: number; tocnih: number }[];
   nisuIgrali: string[];
 }
+export interface RezultatKviza { ukupno: number; odgovoreno: number; tocnih: number; najduljiNiz: number }
 export interface StanjeDnevnog {
   dan: string;
   ukupnoBodova: number;
@@ -98,6 +99,8 @@ export interface Api {
   ligaOdgovori(igracId: string, kod: string, dan: string): Promise<UsporedbaOdgovora>;
   preimenujLigu(igracId: string, kod: string, naziv: string): Promise<string>;
   ukloniClana(igracId: string, kod: string, nadimak: string): Promise<boolean>;
+  /** Sažetak kviza za završni ekran; null ako ga nema (lokalni način). */
+  rezultatKviza(kvizId: string): Promise<RezultatKviza | null>;
   /** Pokreće serversko mjerenje vremena za to pitanje. */
   dohvatiPitanje(kvizId: string, redni: number): Promise<JavnoPitanje>;
   /** Tragovi: otkriva sljedeći trag. */

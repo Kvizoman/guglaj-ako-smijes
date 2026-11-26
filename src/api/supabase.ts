@@ -1,5 +1,5 @@
 // Pravi server: Supabase RPC funkcije. Točni odgovori ostaju u bazi dok igrač ne odgovori.
-import type { Api, Igrac, Liga, MojaLiga, RangLista, Razdoblje, StanjeDnevnog, UsporedbaOdgovora } from './tip';
+import type { Api, Igrac, Liga, MojaLiga, RangLista, Razdoblje, RezultatKviza, StanjeDnevnog, UsporedbaOdgovora } from './tip';
 import type { JavnoPitanje, KategorijaId, Odgovor, Rezultat } from '../tipovi';
 import { SUPABASE_URL, SUPABASE_KLJUC } from './konfig';
 
@@ -78,6 +78,9 @@ export class SupabaseApi implements Api {
   }
   liga(igracId: string, kod: string, tjedan: string | null, kategorija: KategorijaId | null) {
     return rpc<Liga>('liga', { p_igrac: igracId, p_kod: kod, p_tjedan: tjedan, p_kategorija: kategorija });
+  }
+  rezultatKviza(kvizId: string) {
+    return rpc<RezultatKviza | null>('rezultat_kviza', { p_kviz: kvizId });
   }
   ligaOdgovori(igracId: string, kod: string, dan: string) {
     return rpc<UsporedbaOdgovora>('liga_odgovori', { p_igrac: igracId, p_kod: kod, p_dan: dan });

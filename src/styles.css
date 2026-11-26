@@ -478,3 +478,22 @@ button, input { font: inherit; color: inherit; }
 .usp-sekunde { color: var(--prigušeno); font-size: .78rem; }
 .usp-ja { background: color-mix(in srgb, var(--zarulja) 14%, transparent); }
 .usp-ja .usp-nadimak::after { content: ' (ti)'; color: var(--zarulja); font-weight: 650; }
+
+/* ---------- Karakter (kreativne ideje, faza A) ---------- */
+
+.slogan { margin: -.6rem 0 0; font-family: var(--slova-semafor); font-size: 1.6rem; letter-spacing: .02em; color: var(--zarulja); }
+.dno-ega { margin: .5rem 0 0; color: var(--prigušeno); font-size: .8rem; font-style: italic; text-align: center; }
+.pritisak { min-height: 1.3em; margin: -.3rem 0 0; color: var(--zarulja); font-weight: 750; font-size: .95rem; text-align: center; }
+.odbrojavac.gori ~ .pritisak { color: var(--opasno); }
+.kraj-titula { display: flex; flex-direction: column; gap: .15rem; padding: .8rem 1rem; border-left: 6px solid var(--zarulja); background: color-mix(in srgb, var(--zarulja) 12%, transparent); }
+.kraj-titula-oznaka { color: var(--prigušeno); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.kraj-titula strong { font-family: var(--slova-semafor); font-size: 1.9rem; line-height: 1.05; font-weight: 400; }
+.kraj-titula-brojke { color: var(--prigušeno); font-size: .9rem; }
+.pravila { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: .8rem; line-height: 1.45; }
+.pravila strong { color: var(--zarulja); }
+.tost {
+  position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 50; max-width: min(92vw, 28rem);
+  padding: .7rem 1rem; background: var(--ploca); color: var(--tekst); border: 2px solid var(--zarulja); border-radius: var(--r);
+  font-weight: 650; box-shadow: 0 8px 24px rgb(0 0 0 / .4); transition: opacity .35s, transform .35s;
+}
+.tost-van { opacity: 0; transform: translate(-50%, .6rem); }

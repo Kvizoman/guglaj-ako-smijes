@@ -8,6 +8,7 @@ import { pokreniTajmer } from './ui/tajmer';
 import { nacrtajPlocu, type Ploca } from './ui/renderi';
 import { zvuk, jeUkljucen, prebaci } from './zvuk';
 import { mnoziteljNiza } from './bodovanje';
+import { ULAZ, PORUKE_SATA, REAKCIJE, obavijestPosjeta, porukaBijega, pravila, tekstIzazova, titula, tost } from './ui/karakter';
 
 // Pravi server (Supabase). Za razvoj bez interneta: dodaj ?lokalno na adresu.
 // Lokalni način postoji samo u razvoju (npm run dev); u objavljenoj igri nema ni njega ni probnih odgovora.
@@ -24,7 +25,7 @@ function gumbZvuka(): HTMLButtonElement {
     b.setAttribute('aria-label', jeUkljucen() ? 'Isključi zvuk' : 'Uključi zvuk');
     b.setAttribute('aria-pressed', String(!jeUkljucen()));
   };
-  b.addEventListener('click', () => { prebaci(); osvjezi(); });
+  b.addEventListener('click', () => { prebaci(); osvjezi(); if (!jeUkljucen()) tost(REAKCIJE.iskljucenZvuk); });
   osvjezi();
   return b;
 }
@@ -97,9 +98,10 @@ function ekranNadimka() {
   app.append(h('main', { class: 'pocetna' },
     h('div', { class: 'pocetna-vrh' }, gumbZvuka()),
     logo(),
+    h('p', { class: 'slogan' }, ULAZ.slogan),
     pozivEl,
     h('p', { class: 'pocetna-podnaslov' }, 'Devet kategorija, sat koji ne čeka i nijedno pitanje na koje se može odgovoriti guglanjem.'),
-    obrazac(h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'submit' }, 'Kreni'), async () => {
+    obrazac(h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'submit' }, ULAZ.kreni), async () => {
       try {
         igrac = await api.noviIgrac(nadimak.value);
         if (!lokalno) spremiIgraca(igrac);
@@ -112,6 +114,8 @@ function ekranNadimka() {
     greskaEl),
     h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: ekranPrijave }, 'Već igram na drugom uređaju'),
     gumbIsprobaj(),
+    h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: () => ekranPravila(ekranNadimka) }, ULAZ.pravila),
+    h('p', { class: 'dno-ega' }, ULAZ.dno),
   ));
   nadimak.focus();
 }
@@ -181,16 +185,18 @@ async function pocetni(obavijest?: string) {
     return;
   }
   if (await obradiPozivnicu()) return;
+  obavijest ??= obavijestPosjeta() ?? undefined;
   const kategorije = Object.values(KATEGORIJE);
   ocisti(app);
   app.append(
     h('main', { class: 'pocetna' },
       h('div', { class: 'pocetna-vrh pocetna-vrh-igrac' }, h('span', { class: 'igrac-nadimak' }, info.nadimak), gumbZvuka()),
       logo(),
+      h('p', { class: 'slogan' }, ULAZ.slogan),
       obavijest ? h('p', { class: 'obavijest', role: 'status' }, obavijest) : null,
       h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'button', onclick: jednimKlikom(igrajDnevni) }, 'Kviz dana'),
       h('p', { class: 'napomena' }, '18 pitanja, po 2 iz svake kategorije. Isti za sve igrače, jednom na dan.'),
-      h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: jednimKlikom(() => ekranRangListe()) }, 'Rang-liste'),
+      h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: jednimKlikom(() => ekranRangListe()) }, ULAZ.rangListe),
       gumbIsprobaj(),
       h('h2', { class: 'naslov-odjeljka' }, 'Trening'),
       h('p', { class: 'napomena napomena-odjeljak' }, '10 pitanja iz jedne kategorije, koliko god puta želiš. Ne ulazi u rang-liste.'),
@@ -211,7 +217,9 @@ async function pocetni(obavijest?: string) {
       h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: ekranNoveLige }, 'Napravi ligu'),
       h('div', { class: 'pocetna-dno' },
         h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: () => ekranPina(info.imaPin) },
-          info.imaPin ? 'Promijeni PIN' : 'Postavi PIN za drugi uređaj')),
+          info.imaPin ? 'Promijeni PIN' : 'Postavi PIN za drugi uređaj'),
+        h('button', { class: 'gumb gumb-sporedni', type: 'button', onclick: () => ekranPravila(() => pocetni()) }, ULAZ.pravila)),
+      h('p', { class: 'dno-ega' }, ULAZ.dno),
     ),
   );
 }
@@ -288,7 +296,7 @@ async function ekranRangListe(razdoblje: Razdoblje = 'dan', kat: KategorijaId | 
   app.append(h('main', { class: 'rang' },
     h('div', { class: 'pocetna-vrh pocetna-vrh-igrac' },
       h('button', { class: 'gumb gumb-sporedni gumb-mali', type: 'button', onclick: () => pocetni() }, 'Natrag'), gumbZvuka()),
-    h('h2', { class: 'naslov-ekrana' }, 'Rang-liste'),
+    h('h2', { class: 'naslov-ekrana' }, ULAZ.rangListe),
     razdoblja,
     kategorije,
     h('p', { class: 'rang-opis' }, opis),
@@ -577,6 +585,38 @@ async function ekranOdgovora(kod: string, naziv: string, dan: string, tjedanOd: 
   window.scrollTo(0, 0);
 }
 
+// ---------- Pravila i izazov ----------
+
+function ekranPravila(natrag: () => void) {
+  ugasiScenu();
+  document.body.style.removeProperty('--kat');
+  ocisti(app);
+  app.append(h('main', { class: 'rang' },
+    h('div', { class: 'pocetna-vrh pocetna-vrh-igrac' },
+      h('button', { class: 'gumb gumb-sporedni gumb-mali', type: 'button', onclick: natrag }, 'Natrag'), gumbZvuka()),
+    h('h2', { class: 'naslov-ekrana' }, ULAZ.pravila),
+    pravila(),
+    h('p', { class: 'dno-ega' }, ULAZ.dno),
+  ));
+  window.scrollTo(0, 0);
+}
+
+function gumbIzazova(bodovi: number): HTMLElement {
+  const tekst = tekstIzazova(bodovi);
+  const adresa = location.origin + location.pathname;
+  return h('button', {
+    class: 'gumb gumb-sporedni', type: 'button',
+    onclick: async () => {
+      if (typeof navigator.share === 'function') {
+        try { await navigator.share({ text: tekst, url: adresa }); } catch { /* odustao */ }
+        return;
+      }
+      try { await navigator.clipboard.writeText(`${tekst} ${adresa}`); tost('Izazov je kopiran. Zalijepi ga prijatelju.'); }
+      catch { tost(`${tekst} ${adresa}`, 8000); }
+    },
+  }, 'Izazovi prijatelja');
+}
+
 // ---------- Igra ----------
 
 let kvizId = '';
@@ -657,7 +697,8 @@ async function pitanje(redni: number) {
   const broj = h('div', { class: 'odbrojavac', role: 'timer', 'aria-label': 'Preostale sekunde' });
   const fitilj = h('div', { class: 'fitilj' });
   const upozorenje = h('div', { class: 'upozorenje', role: 'alert', hidden: true },
-    h('strong', { class: 'upozorenje-naslov' }, 'Varaš, a?'), ' Izlazak iz igre tijekom pitanja prepolovljuje bodove za ovo pitanje.');
+    h('strong', { class: 'upozorenje-naslov' }, porukaBijega()), ' Izlazak iz igre tijekom pitanja prepolovljuje bodove za ovo pitanje.');
+  const pritisak = h('p', { class: 'pritisak', 'aria-live': 'polite' });
   const tekst = h('p', { class: 'pitanje-tekst' }, p.tekst);
   const slika = p.slika ? h('img', { class: 'pitanje-slika', src: p.slika.src, alt: p.slika.opis, draggable: 'false' }) : null;
   const dno = h('div', { class: 'dno' });
@@ -710,6 +751,7 @@ async function pitanje(redni: number) {
         gumbZvuka())),
     h('section', { class: 'pozornica', 'aria-live': 'polite' },
       broj,
+      pritisak,
       h('div', { class: 'tip-pitanja' }, NAZIV_TIPA[p.tip]),
       upozorenje,
       h('div', { class: 'pitanje' }, tekst, slika),
@@ -728,6 +770,9 @@ async function pitanje(redni: number) {
   ploca.fokus?.();
   zaustaviTajmer = pokreniTajmer(broj, fitilj, p.vrijemeMs, () => {
     void posalji(ploca.trenutniOdgovor?.() ?? { vrsta: 'nista' });
+  }, p.vrijemeMs, (s) => {
+    // poruka samo kad pitanje traje dulje od te sekunde (15 s ne prikazuje se na pitanju od 15 s)
+    if (PORUKE_SATA[s] && p.vrijemeMs / 1000 > s) pritisak.textContent = PORUKE_SATA[s];
   });
 }
 
@@ -763,6 +808,23 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
 }
 
 function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: string) {
+  const kviz = kvizId;
+  const titulaEl = h('div', { class: 'kraj-titula', hidden: true });
+  const zavrsnoEl = zavrsno ? h('p', { class: 'kraj-poruka' }, zavrsno) : null;
+  if (!odranije && kviz) {
+    void api.rezultatKviza(kviz).then((r) => {
+      if (!r || r.odgovoreno === 0) return;
+      const postotak = Math.floor((100 * r.tocnih) / r.odgovoreno);
+      const t = titula(postotak);
+      titulaEl.replaceChildren(
+        h('span', { class: 'kraj-titula-oznaka' }, 'Titula'),
+        h('strong', {}, t),
+        h('span', { class: 'kraj-titula-brojke' }, `${postotak} % točnih · najdulji niz ${r.najduljiNiz}`));
+      titulaEl.hidden = false;
+      // ista rečenica kao završna poruka (npr. Intelektualna aristokracija): ne ponavljaj
+      if (zavrsnoEl && zavrsnoEl.textContent!.replace(/\.$/, '') === t) zavrsnoEl.remove();
+    }).catch(() => {});
+  }
   ugasiScenu();
   document.body.style.removeProperty('--kat');
   if (!odranije) zvuk.kraj();
@@ -775,7 +837,9 @@ function kraj(bodovi: number, v: typeof vrsta, odranije = false, zavrsno?: strin
       h('p', { class: 'kraj-oznaka' }, v === 'dnevni' && odranije ? 'Kviz dana' : 'Konačni rezultat'),
       h('div', { class: 'kraj-bodovi' }, String(bodovi)),
       h('p', { class: 'kraj-tekst' }, opis),
-      zavrsno ? h('p', { class: 'kraj-poruka' }, zavrsno) : null,
+      titulaEl,
+      zavrsnoEl,
+      v === 'dnevni' ? gumbIzazova(bodovi) : null,
       v === 'dnevni'
         ? h('button', { class: 'gumb gumb-glavni gumb-velik', type: 'button', onclick: jednimKlikom(() => ekranRangListe('dan')) }, 'Rang-lista dana')
         : null,
