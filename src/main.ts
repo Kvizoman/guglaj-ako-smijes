@@ -749,7 +749,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
       h('div', { class: 'presuda-vrh' },
         h('h2', { class: 'presuda-naslov' }, naslov),
         h('div', { class: 'presuda-bodovi' }, `+${r.bodovi}`)),
-      h('p', { class: 'presuda-komentar' }, r.komentar),
+      r.komentar ? h('p', { class: 'presuda-komentar' }, r.komentar) : null,
       r.niz > 1 ? h('p', { class: 'presuda-niz' }, `Niz točnih: ${r.niz}, bodovi ×${mnoziteljNiza(r.niz).toFixed(1).replace('.', ',')}`) : null,
       r.napustio ? h('p', { class: 'presuda-napustio' }, 'Bodovi su prepolovljeni zbog izlaska iz igre.') : null,
       h('p', { class: 'presuda-tocno' }, h('span', {}, 'Točan odgovor: '), h('strong', {}, r.prikazTocno)),
