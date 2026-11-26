@@ -94,6 +94,8 @@ export interface Rezultat {
   objasnjenje: string;
   /** Šaljivi komentar ili pohvala. */
   komentar: string;
+  /** Pitanje je preskočeno jokerom. */
+  preskoceno?: boolean;
   /** Samo nakon zadnjeg pitanja: poruka prema postotku točnih. */
   zavrsno?: string;
   /** Samo nakon 15. točnog odgovora zaredom: skrivena bonus poruka. */

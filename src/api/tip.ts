@@ -57,6 +57,8 @@ export interface UsporedbaOdgovora {
   igraci: { nadimak: string; ja: boolean; bodovi: number; tocnih: number }[];
   nisuIgrali: string[];
 }
+export interface StanjeJokera { iskoristeni: string[]; najvise: number; dopusteno: boolean }
+export type UcinakJokera = Partial<Rezultat> & { iskoristeni: string[]; ukloni?: number[]; tekst?: string; vrijemeMs?: number; zalog?: boolean };
 export interface RezultatKviza { ukupno: number; odgovoreno: number; tocnih: number; najduljiNiz: number }
 export interface StanjeDnevnog {
   dan: string;
@@ -91,6 +93,8 @@ export interface Api {
   /** Postignuća osvojena u ovom kvizu koja igrač još nije vidio (server ih označi viđenima). */
   novaPostignuca(kvizId: string): Promise<string[]>;
   mojaPostignuca(igracId: string): Promise<{ kod: string; kad: string }[]>;
+  jokeriKviza(kvizId: string): Promise<StanjeJokera | null>;
+  iskoristiJoker(kvizId: string, redni: number, joker: string): Promise<UcinakJokera>;
   /** Rang-lista kvizova dana; bez kategorije = ukupna lista. */
   rangLista(igracId: string, razdoblje: Razdoblje, kategorija: KategorijaId | null): Promise<RangLista>;
   napraviLigu(igracId: string, naziv: string): Promise<{ kod: string; naziv: string }>;

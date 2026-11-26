@@ -1,5 +1,5 @@
 import './styles.css';
-import type { Api, Igrac, Liga, MojaLiga, PitanjeUsporedbe, RangLista, Razdoblje, RedListe, UsporedbaOdgovora } from './api/tip';
+import type { Api, Igrac, Liga, MojaLiga, PitanjeUsporedbe, RangLista, Razdoblje, RedListe, StanjeJokera, UcinakJokera, UsporedbaOdgovora } from './api/tip';
 import type { JavnoPitanje, KategorijaId, Odgovor, Rezultat } from './tipovi';
 import { SupabaseApi } from './api/supabase';
 import { KATEGORIJE, NAZIV_TIPA, ikonaSvg } from './kategorije';
@@ -9,7 +9,7 @@ import { nacrtajPlocu, type Ploca } from './ui/renderi';
 import { zvuk, jeUkljucen, prebaci } from './zvuk';
 import { mnoziteljNiza } from './bodovanje';
 import { nacrtajSvjedodzbu, uPng } from './ui/svjedodzba';
-import { NACINI, POSTIGNUCA, REAKCIJE_IGRE, nazivNacina, type NacinId } from './ui/karakter';
+import { JOKERI, JOKER_POZDRAV, NACINI, POSTIGNUCA, REAKCIJE_IGRE, nazivNacina, type NacinId } from './ui/karakter';
 import { ULAZ, PORUKE_SATA, REAKCIJE, obavijestPosjeta, porukaBijega, pravila, tekstIzazova, titula, tost } from './ui/karakter';
 
 // Pravi server (Supabase). Za razvoj bez interneta: dodaj ?lokalno na adresu.
@@ -696,6 +696,11 @@ let kvizId = '';
 let ukupnoPitanja = 0;
 let vrsta: 'dnevni' | 'trening' | 'probni' | 'nacin' = 'probni';
 let nacin: NacinId = 'rulet';
+/** Jokeri trenutnog kviza (učitavaju se s prvim pitanjem). */
+let jokeri: (StanjeJokera & { kviz: string }) | null = null;
+function jokerSlobodan(id: string): boolean {
+  return !!jokeri && jokeri.dopusteno && !jokeri.iskoristeni.includes(id) && jokeri.iskoristeni.length < jokeri.najvise;
+}
 /** Rekord u trenutnom načinu prije ove igre. */
 let rekordNacina = 0;
 let treningKat: KategorijaId = 'povijest';
@@ -777,6 +782,10 @@ async function igrajTrening(kat: KategorijaId) {
 async function pitanje(redni: number) {
   let p: JavnoPitanje;
   try {
+    if (jokeri?.kviz !== kvizId) {
+      const s = await api.jokeriKviza(kvizId).catch(() => null);
+      jokeri = s ? { ...s, kviz: kvizId } : null;
+    }
     p = await api.dohvatiPitanje(kvizId, redni);
   } catch (e) {
     greska(e);
@@ -791,6 +800,9 @@ async function pitanje(redni: number) {
   const upozorenje = h('div', { class: 'upozorenje', role: 'alert', hidden: true },
     h('strong', { class: 'upozorenje-naslov' }, porukaBijega()), ' Izlazak iz igre tijekom pitanja prepolovljuje bodove za ovo pitanje.');
   const pritisak = h('p', { class: 'pritisak', 'aria-live': 'polite' });
+  const natuknicaEl = h('p', { class: 'natuknica', role: 'status', hidden: true });
+  const zalogEl = h('p', { class: 'zalog-oznaka', hidden: true }, 'Zalog ega: točno ×2, netočno −100.');
+  const jokerTraka = h('div', { class: 'jokeri', role: 'group', 'aria-label': 'Jokeri' });
   const tekst = h('p', { class: 'pitanje-tekst' }, p.tekst);
   const slika = p.slika ? h('img', { class: 'pitanje-slika', src: p.slika.src, alt: p.slika.opis, draggable: 'false' }) : null;
   const dno = h('div', { class: 'dno' });
@@ -824,6 +836,7 @@ async function pitanje(redni: number) {
     if (poslano) return; // zaštita od dvostrukog slanja
     ugasi();
     scena.classList.add('zakljucano');
+    jokerTraka.querySelectorAll('button').forEach((b) => { b.disabled = true; });
     try {
       const r = await api.posaljiOdgovor(kvizId, redni, o, napustio);
       prikaziRezultat(r, ploca, dno, redni);
@@ -842,12 +855,15 @@ async function pitanje(redni: number) {
       h('div', { class: 'traka-desno' },
         h('span', { class: 'traka-redni' }, `${redni + 1}/${p.ukupno}`),
         gumbZvuka())),
+    jokerTraka,
     h('section', { class: 'pozornica', 'aria-live': 'polite' },
       broj,
       pritisak,
       h('div', { class: 'tip-pitanja' }, NAZIV_TIPA[p.tip]),
       upozorenje,
       h('div', { class: 'pitanje' }, tekst, slika),
+      natuknicaEl,
+      zalogEl,
       ploca.el),
     dno,
   );
@@ -861,21 +877,79 @@ async function pitanje(redni: number) {
 
   app.append(scena);
   ploca.fokus?.();
-  if (vrsta === 'nacin' && nacin === 'kava') { scena.classList.add('bez-sata'); return; }
-  zaustaviTajmer = pokreniTajmer(broj, fitilj, p.vrijemeMs, () => {
-    void posalji(ploca.trenutniOdgovor?.() ?? { vrsta: 'nista' });
-  }, p.vrijemeMs, (s) => {
-    // poruka samo kad pitanje traje dulje od te sekunde (15 s ne prikazuje se na pitanju od 15 s)
-    if (PORUKE_SATA[s] && p.vrijemeMs / 1000 > s) pritisak.textContent = PORUKE_SATA[s];
-  });
+  const bezSata = vrsta === 'nacin' && nacin === 'kava';
+  const naIstek = () => { void posalji(ploca.trenutniOdgovor?.() ?? { vrsta: 'nista' }); };
+  // poruka samo kad pitanje traje dulje od te sekunde (15 s ne prikazuje se na pitanju od 15 s)
+  const naSekundu = (s: number) => { if (PORUKE_SATA[s] && p.vrijemeMs / 1000 > s) pritisak.textContent = PORUKE_SATA[s]; };
+
+  const nacrtajJokere = () => {
+    if (!jokeri || !jokeri.dopusteno) { jokerTraka.hidden = true; return; }
+    const preostalo = jokeri.najvise - jokeri.iskoristeni.length;
+    jokerTraka.replaceChildren(
+      h('span', { class: 'jokeri-broj' }, `Jokeri: ${preostalo}`),
+      ...JOKERI.filter((j) => j.id !== 'ponisti').map((j) => {
+        const neide = (j.id === 'pola' && !(p.ponudeno && p.ponudeno.length >= 3)) || (j.id === 'vrijeme' && bezSata);
+        return h('button', {
+          type: 'button', class: 'joker', title: j.opis, 'aria-label': `${j.naziv}: ${j.opis}`,
+          disabled: poslano || neide || !jokerSlobodan(j.id) ? true : null,
+          onclick: () => void iskoristi(j.id),
+        }, j.naziv);
+      }));
+  };
+  const iskoristi = async (id: string) => {
+    if (poslano) return;
+    let u: UcinakJokera;
+    try { u = await api.iskoristiJoker(kvizId, redni, id); } catch (e) { tost(e instanceof Error ? e.message : String(e)); return; }
+    const prvi = jokeri!.iskoristeni.length === 0;
+    jokeri!.iskoristeni = u.iskoristeni;
+    if (u.preskoceno) {
+      ugasi();
+      scena.classList.add('zakljucano');
+      jokerTraka.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+      prikaziRezultat(u as Rezultat, ploca, dno, redni);
+      void javiPostignuca(kvizId);
+      return;
+    }
+    if (prvi) tost(JOKER_POZDRAV);
+    for (const i of u.ukloni ?? []) {
+      const b = ploca.el.querySelectorAll<HTMLButtonElement>('.odgovor')[i];
+      if (b) { b.disabled = true; b.classList.add('uklonjen'); }
+    }
+    if (u.tekst) { natuknicaEl.textContent = u.tekst; natuknicaEl.hidden = false; }
+    if (u.zalog) zalogEl.hidden = false;
+    if (u.vrijemeMs !== undefined && !bezSata) {
+      zaustaviTajmer();
+      zaustaviTajmer = pokreniTajmer(broj, fitilj, Math.max(p.vrijemeMs, u.vrijemeMs), naIstek, u.vrijemeMs, naSekundu);
+    }
+    nacrtajJokere();
+  };
+  nacrtajJokere();
+
+  if (bezSata) { scena.classList.add('bez-sata'); return; }
+  zaustaviTajmer = pokreniTajmer(broj, fitilj, p.vrijemeMs, naIstek, p.vrijemeMs, naSekundu);
 }
 
+function gumbPonisti(redni: number): HTMLElement {
+  const j = JOKERI.find((x) => x.id === 'ponisti')!;
+  const b: HTMLButtonElement = h('button', {
+    class: 'gumb gumb-sporedni joker-ponisti', type: 'button', title: j.opis,
+    onclick: async () => {
+      b.disabled = true;
+      try {
+        const u = await api.iskoristiJoker(kvizId, redni, 'ponisti');
+        jokeri!.iskoristeni = u.iskoristeni;
+        b.replaceWith(h('p', { class: 'presuda-niz' }, `Greška poništena. Niz točnih ostaje: ${u.niz ?? 0}.`));
+      } catch (e) { b.disabled = false; tost(e instanceof Error ? e.message : String(e)); }
+    },
+  }, `Joker: ${j.naziv}`);
+  return b;
+}
 function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: number) {
   ploca.oznaci?.(r);
   const djelomicno = !r.tocno && r.bodovi > 0;
   if (r.tocno) zvuk.tocno(); else zvuk.netocno();
 
-  const naslov = r.istekloVrijeme ? 'Vrijeme je isteklo'
+  const naslov = r.preskoceno ? 'Preskočeno' : r.istekloVrijeme ? 'Vrijeme je isteklo'
     : r.tocno ? 'Točno' : djelomicno ? 'Djelomično' : 'Netočno';
   const smrt = vrsta === 'nacin' && nacin === 'smrt' && !r.tocno;
   const zadnje = redni + 1 >= ukupnoPitanja || smrt;
@@ -893,6 +967,7 @@ function prikaziRezultat(r: Rezultat, ploca: Ploca, dno: HTMLElement, redni: num
       smrt ? h('p', { class: 'presuda-bonus' }, REAKCIJE_IGRE.smrt) : null,
       r.bonus ? h('p', { class: 'presuda-bonus' }, r.bonus) : null,
       r.niz > 1 ? h('p', { class: 'presuda-niz' }, `Niz točnih: ${r.niz}, bodovi ×${mnoziteljNiza(r.niz).toFixed(1).replace('.', ',')}`) : null,
+      !r.tocno && !r.preskoceno && jokerSlobodan('ponisti') ? gumbPonisti(redni) : null,
       r.napustio ? h('p', { class: 'presuda-napustio' }, 'Bodovi su prepolovljeni zbog izlaska iz igre.') : null,
       h('p', { class: 'presuda-tocno' }, h('span', {}, 'Točan odgovor: '), h('strong', {}, r.prikazTocno)),
       h('p', { class: 'presuda-objasnjenje' }, r.objasnjenje),

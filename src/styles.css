@@ -528,3 +528,19 @@ button, input { font: inherit; color: inherit; }
 .postignuce small { font-size: .78rem; }
 .postignuce.osvojeno { border-style: solid; border-color: var(--zarulja); background: color-mix(in srgb, var(--zarulja) 10%, transparent); color: var(--tekst); }
 .postignuce.osvojeno strong { color: var(--zarulja); }
+
+/* ---------- Jokeri (faza E) ---------- */
+
+.jokeri { display: flex; gap: .35rem; overflow-x: auto; padding: .1rem 0 .3rem; scrollbar-width: thin; align-items: center; }
+.jokeri-broj { flex: none; color: var(--zarulja); font-weight: 800; font-size: .85rem; padding-right: .2rem; }
+.joker {
+  flex: none; min-height: 2.4rem; padding: .3rem .7rem; font-size: .82rem; font-weight: 750; cursor: pointer;
+  color: var(--tekst); background: transparent; border: 2px dashed var(--zarulja); border-radius: 999px;
+}
+.joker:hover:not(:disabled) { background: color-mix(in srgb, var(--zarulja) 18%, transparent); }
+.joker:focus-visible { outline: 3px solid var(--zarulja); outline-offset: 2px; }
+.joker:disabled { opacity: .35; cursor: default; border-style: solid; border-color: var(--rub); }
+.natuknica { margin: 0; padding: .55rem .8rem; border-left: 4px solid var(--zarulja); background: color-mix(in srgb, var(--zarulja) 12%, transparent); font-weight: 700; }
+.zalog-oznaka { margin: 0; color: var(--opasno); font-weight: 800; }
+.odgovor.uklonjen { opacity: .25; text-decoration: line-through; }
+.joker-ponisti { align-self: flex-start; }

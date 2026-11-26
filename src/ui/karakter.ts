@@ -136,3 +136,15 @@ export const POSTIGNUCA: { kod: string; naziv: string; opis: string }[] = [
   { kod: 'fenomen', naziv: 'Statistički fenomen', opis: 'Nijedan točan odgovor u cijeloj partiji.' },
   { kod: 'neunistivi', naziv: 'Neuništivi ego', opis: 'Pet novih partija istog dana nakon lošeg rezultata.' },
 ];
+
+/** Jokeri (ideja 4). Najviše 3 po kvizu, svaki jednom; u Intelektualnom paklu ih nema. */
+export type JokerId = 'preskoci' | 'pola' | 'vrijeme' | 'ponisti' | 'zalog' | 'natuknica';
+export const JOKERI: { id: JokerId; naziv: string; opis: string }[] = [
+  { id: 'pola', naziv: 'Prepolovi katastrofu', opis: 'Uklanja dva netočna odgovora.' },
+  { id: 'vrijeme', naziv: 'Čekaj da mi dođe', opis: 'Dodaje 10 sekundi.' },
+  { id: 'natuknica', naziv: 'Pedagoška intervencija', opis: 'Mala natuknica.' },
+  { id: 'zalog', naziv: 'Zalog ega', opis: 'Točno: dvostruki bodovi. Netočno: minus 100.' },
+  { id: 'preskoci', naziv: 'Neuroni na remontu', opis: 'Preskače pitanje, niz ostaje.' },
+  { id: 'ponisti', naziv: 'Nije mi bio dan', opis: 'Poništava grešku, niz ostaje.' },
+];
+export const JOKER_POZDRAV = 'Samostalnost je precijenjena. Nastavljamo.';
